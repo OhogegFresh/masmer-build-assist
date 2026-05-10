@@ -14,7 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      waitlist_signups: {
+        Row: {
+          business_name: string
+          contractor_type: string
+          created_at: string
+          email: string
+          feature_interest: string
+          full_name: string
+          id: string
+          phone: string
+        }
+        Insert: {
+          business_name: string
+          contractor_type: string
+          created_at?: string
+          email: string
+          feature_interest: string
+          full_name: string
+          id?: string
+          phone: string
+        }
+        Update: {
+          business_name?: string
+          contractor_type?: string
+          created_at?: string
+          email?: string
+          feature_interest?: string
+          full_name?: string
+          id?: string
+          phone?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
