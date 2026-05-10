@@ -30,12 +30,12 @@ function LoginPage() {
       setLoading(false);
       if (error) return toast.error(error.message);
       toast.success("Signed in");
-      navigate({ to: "/admin" });
+      navigate({ to: "/dashboard" });
     } else {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/admin` },
+        options: { emailRedirectTo: `${window.location.origin}/dashboard` },
       });
       setLoading(false);
       if (error) return toast.error(error.message);
