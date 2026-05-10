@@ -76,12 +76,12 @@ export function Waitlist() {
       <div className="mx-auto max-w-3xl px-6">
         <Reveal>
           <div className="text-center mb-10">
-            <p className="text-gold font-bold uppercase tracking-widest text-xs mb-3">
+            <p className="text-orange font-bold uppercase tracking-widest text-xs mb-3">
               Founding Members
             </p>
-            <h2 className="text-4xl md:text-5xl font-black tracking-tighter">
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter text-gradient-orange">
               Be One of the First{" "}
-              <span className="text-gradient-gold">10 Contractors</span>
+              <span className="text-gradient-orange">10 Contractors</span>
             </h2>
             <p className="mt-4 text-muted-foreground">
               Get your first month free and lock in founding member pricing.
@@ -151,7 +151,7 @@ export function Waitlist() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-gradient-gold px-6 py-4 text-sm font-black text-background shadow-gold hover:scale-[1.01] transition-transform disabled:opacity-60"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-gradient-orange px-6 py-4 text-sm font-black text-foreground shadow-orange hover:scale-[1.01] transition-transform disabled:opacity-60"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 {submitting ? "Submitting..." : "Claim My Spot"}

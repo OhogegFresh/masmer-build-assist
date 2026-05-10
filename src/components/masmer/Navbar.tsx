@@ -39,9 +39,9 @@ export function Navbar() {
           </Link>
           <a
             href="#contact"
-            className="inline-flex items-center justify-center rounded-md bg-gradient-gold px-4 py-2 text-sm font-bold text-background hover:shadow-gold transition-shadow"
+            className="inline-flex items-center justify-center rounded-md bg-gradient-orange px-4 py-2 text-sm font-bold text-foreground hover:shadow-orange transition-shadow"
           >
-            Get Early Access
+            Try Free
           </a>
         </div>
       </div>
