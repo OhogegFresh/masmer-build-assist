@@ -3,174 +3,139 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Reveal } from "./Reveal";
-import { CheckCircle2, Loader2, Mail, Phone } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 
-const schema = z.object({
-  full_name: z.string().trim().min(2, "Enter your name").max(100),
-  business_name: z.string().trim().min(2, "Enter your business").max(120),
-  phone: z.string().trim().min(7, "Enter a valid phone").max(30),
-  email: z.string().trim().email("Invalid email").max(160),
-  contractor_type: z.string().min(1, "Select a type"),
-  feature_interest: z.string().min(1, "Select a feature"),
-});
-
-const contractorTypes = [
-  "General Contractor",
-  "HVAC",
-  "Plumber",
-  "Roofer",
-  "Electrician",
-  "Painter",
-  "Flooring",
-  "Drywall",
-  "Other",
-];
-
-const featureInterests = [
-  "AI Receptionist",
-  "AI Estimating Bot",
-  "Lead Follow-Up",
-  "All of the Above",
-];
-
-const fieldClass =
-  "w-full rounded-md border border-border bg-background/60 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-orange focus:outline-none focus:ring-2 focus:ring-orange/40 transition-colors";
+const emailSchema = z.string().trim().email("Please enter a valid email").max(255);
 
 export function Waitlist() {
+  const [email, setEmail] = useState("");
+  const [consent, setConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState<{ email: string; phone: string } | null>(
-    null,
-  );
+  const [done, setDone] = useState<string | null>(null);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    const fd = new FormData(e.currentTarget);
-    const raw = Object.fromEntries(fd.entries());
-    const parsed = schema.safeParse(raw);
+    const parsed = emailSchema.safeParse(email);
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Please check your inputs.");
+      setError(parsed.error.issues[0]?.message ?? "Invalid email");
+      return;
+    }
+    if (!consent) {
+      setError("Please agree to receive updates to continue");
       return;
     }
     setSubmitting(true);
-    const { error: dbError } = await supabase
-      .from("waitlist_signups")
-      .insert(parsed.data);
-    setSubmitting(false);
+    const { error: dbError } = await supabase.from("waitlist_signups").insert({
+      email: parsed.data,
+      marketing_consent: true,
+      consent_timestamp: new Date().toISOString(),
+      source: "landing_page_demo",
+    } as any);
     if (dbError) {
+      setSubmitting(false);
       setError("Something went wrong. Please try again.");
-      toast.error("Submission failed. Please try again.");
+      toast.error("Submission failed");
       return;
     }
-    // Fire welcome email (don't block UX on failure)
+    // Trigger welcome email + auto-create demo account
     supabase.functions
       .invoke("send-welcome-email", {
-        body: {
-          email: parsed.data.email,
-          full_name: parsed.data.full_name,
-          business_name: parsed.data.business_name,
-          phone: parsed.data.phone,
-          contractor_type: parsed.data.contractor_type,
-        },
+        body: { email: parsed.data, source: "landing_page_demo" },
       })
       .catch((e) => console.error("welcome email failed", e));
-    setSaved({ email: parsed.data.email, phone: parsed.data.phone });
-    toast.success("You're on the waitlist!", {
-      description: `Saved ${parsed.data.email}`,
-    });
-    setDone(true);
+
+    setSubmitting(false);
+    setDone(parsed.data);
+    toast.success("Check your email!");
   }
 
   return (
-    <section id="contact" className="py-24 md:py-32 border-t border-border bg-secondary">
-      <div className="mx-auto max-w-3xl px-6">
+    <section
+      id="contact"
+      className="py-24 md:py-32 border-t border-border bg-secondary"
+    >
+      <div className="mx-auto max-w-2xl px-6">
         <Reveal>
           <div className="text-center mb-10">
-            <p className="text-orange font-bold uppercase tracking-widest text-xs mb-3">
-              Founding Members
-            </p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter text-gradient-orange">
-              Be One of the First{" "}
-              <span className="text-gradient-orange">10 Contractors</span>
+            <h2 className="font-display text-4xl md:text-5xl font-bold tracking-tighter">
+              Try Masmer AI <span className="text-gradient-orange">Free</span>
             </h2>
             <p className="mt-4 text-muted-foreground">
-              Get your first month free and lock in founding member pricing.
+              Get instant demo access — no credit card required
             </p>
           </div>
         </Reveal>
         <Reveal>
-          {done && saved ? (
-            <div className="rounded-2xl border border-orange/40 bg-card p-10 text-center shadow-orange">
-              <CheckCircle2 className="mx-auto h-12 w-12 text-orange" />
-              <h3 className="mt-4 text-2xl font-black">You're on the list.</h3>
-              <p className="mt-2 text-muted-foreground">
-                We'll reach out within 24 hours to set up your AI agents.
-              </p>
-              <div className="mt-6 rounded-xl border border-border bg-background/60 p-5 text-left">
-                <p className="text-xs uppercase tracking-widest text-orange font-bold mb-3">
-                  Saved to our database
-                </p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-3">
-                    <Mail className="h-4 w-4 text-orange shrink-0" />
-                    <span className="text-muted-foreground">Email:</span>
-                    <span className="font-mono text-foreground break-all">{saved.email}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Phone className="h-4 w-4 text-orange shrink-0" />
-                    <span className="text-muted-foreground">Phone:</span>
-                    <span className="font-mono text-foreground">{saved.phone}</span>
-                  </div>
-                </div>
+          {done ? (
+            <div className="rounded-2xl border border-orange/40 bg-card p-10 text-center shadow-orange animate-in fade-in zoom-in-95 duration-500">
+              <div className="mx-auto h-16 w-16 rounded-full bg-green-500/15 border-2 border-green-500 flex items-center justify-center animate-in zoom-in-50 duration-500">
+                <CheckCircle2 className="h-9 w-9 text-green-500" strokeWidth={2.5} />
               </div>
+              <h3 className="font-display mt-5 text-2xl font-bold">
+                Check your email! 📬
+              </h3>
+              <p className="mt-3 text-muted-foreground">
+                We sent your demo access link to{" "}
+                <span className="text-foreground font-semibold break-all">{done}</span>
+              </p>
+              <p className="mt-4 text-sm text-muted-foreground">
+                Didn't get it? Check your spam folder.
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground/70">
+                Usually arrives within 2 minutes
+              </p>
             </div>
           ) : (
             <form
               onSubmit={onSubmit}
-              className="rounded-2xl border border-border bg-card p-8 shadow-card space-y-4"
+              className="rounded-2xl border border-border bg-card p-8 shadow-card space-y-5"
             >
-              <div className="grid gap-4 md:grid-cols-2">
-                <input name="full_name" placeholder="Full name" className={fieldClass} />
-                <input name="business_name" placeholder="Business name" className={fieldClass} />
-                <input name="phone" placeholder="Phone number" className={fieldClass} />
-                <input name="email" type="email" placeholder="Email" className={fieldClass} />
-                <select name="contractor_type" defaultValue="" className={fieldClass}>
-                  <option value="" disabled>
-                    Type of contractor
-                  </option>
-                  {contractorTypes.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-                <select name="feature_interest" defaultValue="" className={fieldClass}>
-                  <option value="" disabled>
-                    Most interested in
-                  </option>
-                  {featureInterests.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+              <div>
+                <label htmlFor="demo_email" className="sr-only">
+                  Email address
+                </label>
+                <input
+                  id="demo_email"
+                  name="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@yourbusiness.com"
+                  className="w-full rounded-md border border-border bg-background/60 px-5 py-4 text-base text-foreground placeholder:text-muted-foreground focus:border-orange focus:outline-none focus:ring-2 focus:ring-orange/40 transition-colors"
+                />
               </div>
+
+              <label className="flex items-start gap-3 text-sm text-muted-foreground cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={consent}
+                  onChange={(e) => setConsent(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-border accent-orange flex-shrink-0"
+                />
+                <span>
+                  I agree to receive product updates, tips, and news from Masmer AI.
+                  You can unsubscribe anytime.
+                </span>
+              </label>
+
               {error && (
                 <p className="text-sm text-destructive">{error}</p>
               )}
+
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-gradient-orange px-6 py-4 text-sm font-black text-foreground shadow-orange hover:scale-[1.01] transition-transform disabled:opacity-60"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-orange px-6 py-4 text-base font-bold text-white hover:bg-orange/90 transition disabled:opacity-60"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                {submitting ? "Submitting..." : "Claim My Spot"}
+                {submitting ? "Sending..." : "Get Free Demo Access →"}
               </button>
+
               <p className="text-xs text-muted-foreground text-center">
-                We'll never share your info. By submitting you agree to be
-                contacted about Masmer AI.
+                By submitting you agree to our Privacy Policy and Terms of Service
               </p>
             </form>
           )}

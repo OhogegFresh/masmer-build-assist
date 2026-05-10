@@ -414,43 +414,52 @@ export type Database = {
       }
       waitlist_signups: {
         Row: {
-          business_name: string
-          contractor_type: string
+          business_name: string | null
+          consent_timestamp: string | null
+          contractor_type: string | null
           created_at: string
           demo_access: boolean
           demo_expires_at: string
           demo_link: string
           email: string
-          feature_interest: string
-          full_name: string
+          feature_interest: string | null
+          full_name: string | null
           id: string
-          phone: string
+          marketing_consent: boolean
+          phone: string | null
+          source: string | null
         }
         Insert: {
-          business_name: string
-          contractor_type: string
+          business_name?: string | null
+          consent_timestamp?: string | null
+          contractor_type?: string | null
           created_at?: string
           demo_access?: boolean
           demo_expires_at?: string
           demo_link?: string
           email: string
-          feature_interest: string
-          full_name: string
+          feature_interest?: string | null
+          full_name?: string | null
           id?: string
-          phone: string
+          marketing_consent?: boolean
+          phone?: string | null
+          source?: string | null
         }
         Update: {
-          business_name?: string
-          contractor_type?: string
+          business_name?: string | null
+          consent_timestamp?: string | null
+          contractor_type?: string | null
           created_at?: string
           demo_access?: boolean
           demo_expires_at?: string
           demo_link?: string
           email?: string
-          feature_interest?: string
-          full_name?: string
+          feature_interest?: string | null
+          full_name?: string | null
           id?: string
-          phone?: string
+          marketing_consent?: boolean
+          phone?: string | null
+          source?: string | null
         }
         Relationships: []
       }
