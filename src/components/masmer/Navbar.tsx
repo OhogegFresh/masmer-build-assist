@@ -1,4 +1,5 @@
 import { Logo } from "./Logo";
+import { Link } from "@tanstack/react-router";
 
 const links = [
   { href: "#features", label: "Features" },
@@ -23,12 +24,20 @@ export function Navbar() {
             </a>
           ))}
         </nav>
-        <a
-          href="#contact"
-          className="inline-flex items-center justify-center rounded-md bg-gradient-gold px-4 py-2 text-sm font-bold text-background hover:shadow-gold transition-shadow"
-        >
-          Get Early Access
-        </a>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/login"
+            className="hidden sm:inline text-sm text-muted-foreground hover:text-gold transition-colors"
+          >
+            Sign in
+          </Link>
+          <a
+            href="#contact"
+            className="inline-flex items-center justify-center rounded-md bg-gradient-gold px-4 py-2 text-sm font-bold text-background hover:shadow-gold transition-shadow"
+          >
+            Get Early Access
+          </a>
+        </div>
       </div>
     </header>
   );
