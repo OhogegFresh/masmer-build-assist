@@ -38,12 +38,27 @@ function LoginPage() {
   async function loginAsDemo() {
     setDemoLoading(true);
     try {
-      // Make sure the shared demo account exists / password is in sync
-      await supabase.functions.invoke("ensure-demo-user", { body: {} });
-      const { error } = await supabase.auth.signInWithPassword({
+      // Try signing in first — the shared demo user almost always already exists.
+      let { error } = await supabase.auth.signInWithPassword({
         email: DEMO_EMAIL, password: DEMO_PASSWORD,
       });
-      if (error) throw error;
+
+      if (error) {
+        // Fallback: provision the demo user, then retry sign-in.
+        // Hard timeout so the button can never hang forever.
+        const timeout = new Promise((_, rej) =>
+          setTimeout(() => rej(new Error("Demo setup timed out, please try again")), 8000),
+        );
+        await Promise.race([
+          supabase.functions.invoke("ensure-demo-user", { body: {} }),
+          timeout,
+        ]);
+        const retry = await supabase.auth.signInWithPassword({
+          email: DEMO_EMAIL, password: DEMO_PASSWORD,
+        });
+        if (retry.error) throw retry.error;
+      }
+
       await refresh();
       toast.success("Welcome to the demo");
       navigate({ to: "/dashboard" });
