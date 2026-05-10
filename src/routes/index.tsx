@@ -1,26 +1,50 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Navbar } from "@/components/masmer/Navbar";
+import { Hero } from "@/components/masmer/Hero";
+import { Problem } from "@/components/masmer/Problem";
+import { Features } from "@/components/masmer/Features";
+import { EstimatingBot } from "@/components/masmer/EstimatingBot";
+import { HowItWorks } from "@/components/masmer/HowItWorks";
+import { SocialProof } from "@/components/masmer/SocialProof";
+import { Pricing } from "@/components/masmer/Pricing";
+import { Waitlist } from "@/components/masmer/Waitlist";
+import { Footer } from "@/components/masmer/Footer";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Masmer AI — The AI Brain Behind Your Business" },
+      {
+        name: "description",
+        content:
+          "Masmer AI answers calls, books estimates, follows up on leads, schedules jobs, and builds estimates 24/7 for contractors.",
+      },
+      { property: "og:title", content: "Masmer AI — The AI Brain Behind Your Business" },
+      {
+        property: "og:description",
+        content:
+          "AI agents built for contractors: receptionist, estimating bot, lead follow-up, scheduler.",
+      },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
+function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="min-h-screen bg-background text-foreground">
+      <Navbar />
+      <main>
+        <Hero />
+        <Problem />
+        <Features />
+        <EstimatingBot />
+        <HowItWorks />
+        <SocialProof />
+        <Pricing />
+        <Waitlist />
+      </main>
+      <Footer />
     </div>
   );
-}
-
-function Index() {
-  return <PlaceholderIndex />;
 }
