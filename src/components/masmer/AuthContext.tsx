@@ -32,26 +32,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState(false);
   const [appUser, setAppUser] = useState<AppUser | null>(null);
 
-  async function loadAppUser(email: string | undefined) {
+  async function loadAppUser(email: string | undefined, userId?: string, fullName?: string | null) {
     if (!email) { setAppUser(null); return; }
-    const { data } = await (supabase as any)
-      .from("app_users").select("*").eq("email", email).maybeSingle();
-    setAppUser((data as AppUser) ?? null);
+    const query = (supabase as any).from("app_users").select("*").eq("email", email).maybeSingle();
+    const { data } = await query;
+    if (data) {
+      setAppUser(data as AppUser);
+      return;
+    }
+
+    if (userId) {
+      const { data: created } = await (supabase as any)
+        .from("app_users")
+        .insert({ email, user_id: userId, full_name: fullName ?? null, role: "user", is_active: true })
+        .select("*")
+        .maybeSingle();
+      setAppUser((created as AppUser) ?? null);
+      return;
+    }
+
+    setAppUser(null);
   }
 
   async function refresh() {
     const { data } = await supabase.auth.getSession();
     const s = data.session;
     setSession(!!s);
-    await loadAppUser(s?.user?.email);
+    await loadAppUser(s?.user?.email, s?.user?.id, s?.user?.user_metadata?.full_name ?? null);
   }
 
   useEffect(() => {
     let mounted = true;
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       if (!mounted) return;
       setSession(!!s);
-      await loadAppUser(s?.user?.email);
+      void loadAppUser(s?.user?.email, s?.user?.id, s?.user?.user_metadata?.full_name ?? null);
     });
     refresh().finally(() => mounted && setLoading(false));
     return () => { mounted = false; sub.subscription.unsubscribe(); };
