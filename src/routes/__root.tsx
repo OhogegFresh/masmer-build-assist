@@ -10,7 +10,6 @@ import {
 
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
-import { DemoProvider, DemoBanner } from "@/components/masmer/DemoContext";
 import { AuthProvider } from "@/components/masmer/AuthContext";
 
 function NotFoundComponent() {
@@ -121,11 +120,8 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <DemoProvider>
-          <DemoBanner />
-          <Outlet />
-          <Toaster />
-        </DemoProvider>
+        <Outlet />
+        <Toaster />
       </AuthProvider>
     </QueryClientProvider>
   );
