@@ -244,12 +244,13 @@ function Confetti() {
 
 // ─── Payment Schedule ─────────────────────────────────────────────────────────
 function calcPayments(total: number, deposit: number) {
+  const remaining = Math.max(0, total - deposit);
   return {
     deposit,
-    p1: +(total * 0.5).toFixed(2),
-    p2: +(total * 0.25).toFixed(2),
-    p3: +(total * 0.15).toFixed(2),
-    p4: +(total * 0.1).toFixed(2),
+    p1: +(remaining * 0.5).toFixed(2),
+    p2: +(remaining * 0.25).toFixed(2),
+    p3: +(remaining * 0.15).toFixed(2),
+    p4: +(remaining * 0.1).toFixed(2),
   };
 }
 

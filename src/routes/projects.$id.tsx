@@ -107,12 +107,14 @@ function ProjectDetailPage() {
   if (!ready || !project) return <AppShell title="Project"><div className="py-20 text-center"><Loader2 className="inline h-6 w-6 animate-spin text-orange" /></div></AppShell>;
 
   const t = Number(project.contract_total);
+  const dep = Number(project.deposit);
+  const remaining = Math.max(0, t - dep);
   const milestones = [
-    { key: "deposit_paid" as const, label: "Deposit", amount: Number(project.deposit), when: "At signing" },
-    { key: "payment1_paid" as const, label: "Payment 1", amount: t * 0.5, when: "Mobilization" },
-    { key: "payment2_paid" as const, label: "Payment 2", amount: t * 0.25, when: "60% complete" },
-    { key: "payment3_paid" as const, label: "Payment 3", amount: t * 0.15, when: "90% complete" },
-    { key: "final_paid" as const, label: "Final", amount: t * 0.1, when: "Final walkthrough" },
+    { key: "deposit_paid" as const, label: "Deposit", amount: dep, when: "At signing" },
+    { key: "payment1_paid" as const, label: "Payment 1", amount: remaining * 0.5, when: "Mobilization" },
+    { key: "payment2_paid" as const, label: "Payment 2", amount: remaining * 0.25, when: "60% complete" },
+    { key: "payment3_paid" as const, label: "Payment 3", amount: remaining * 0.15, when: "90% complete" },
+    { key: "final_paid" as const, label: "Final", amount: remaining * 0.1, when: "Final walkthrough" },
   ];
 
   return (
