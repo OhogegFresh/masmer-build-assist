@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell, StatusBadge, ProgressBar, fmtUsd } from "@/components/masmer/AppShell";
 import { useRequireAuth } from "@/components/masmer/useRequireAuth";
 import { VapiCard } from "@/components/masmer/VapiCard";
-import { OnboardingWizard, hasCompletedOnboarding } from "@/components/masmer/OnboardingWizard";
 import { Plus, FolderKanban, DollarSign, Clock, Sparkles, Loader2, PhoneIncoming, Copy, Check } from "lucide-react";
 import { CalendarDays, Navigation } from "lucide-react";
 import { ScheduledJob, fmtTime, todayISO, singleMapsUrl } from "@/components/masmer/planner/types";
@@ -53,41 +52,6 @@ type CallRow = {
   estimated_budget?: string | null;
 };
 
-const SAMPLE_PROJECTS = [
-  {
-    customer_name: "Sarah Johnson",
-    customer_address: "142 Oak Street, Binghamton NY",
-    project_title: "Kitchen & Bathroom Renovation",
-    status: "in_progress",
-    progress_pct: 60,
-    contract_total: 24500,
-    deposit_paid: true,
-    payment1_paid: true,
-  },
-  {
-    customer_name: "Mike Rodriguez",
-    customer_address: "89 Elm Ave, Endicott NY",
-    project_title: "Exterior Siding & Roofing",
-    status: "new",
-    progress_pct: 0,
-    contract_total: 36800,
-    deposit_paid: true,
-  },
-  {
-    customer_name: "The Williams Family",
-    customer_address: "334 Pine Road, Vestal NY",
-    project_title: "Full Interior Renovation",
-    status: "completed",
-    progress_pct: 100,
-    contract_total: 18200,
-    deposit_paid: true,
-    payment1_paid: true,
-    payment2_paid: true,
-    payment3_paid: true,
-    final_paid: true,
-  },
-];
-
 function fmtDuration(sec: number | null) {
   if (!sec) return "—";
   const m = Math.floor(sec / 60);
@@ -97,11 +61,9 @@ function fmtDuration(sec: number | null) {
 
 function DashboardPage() {
   const ready = useRequireAuth();
-  const isDemo = false;
   const [projects, setProjects] = useState<Project[]>([]);
   const [calls, setCalls] = useState<CallRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [selectedCall, setSelectedCall] = useState<CallRow | null>(null);
   const [copied, setCopied] = useState(false);
   const [todayJobs, setTodayJobs] = useState<ScheduledJob[]>([]);
@@ -115,17 +77,7 @@ function DashboardPage() {
         .select("*")
         .order("created_at", { ascending: false });
       if (cancelled) return;
-      let projectsList = (projData ?? []) as Project[];
-
-      // Seed sample projects for demo users on first visit
-      if (isDemo && projectsList.length === 0) {
-        const { data: seeded } = await supabase
-          .from("projects")
-          .insert(SAMPLE_PROJECTS as any)
-          .select();
-        if (seeded) projectsList = seeded as Project[];
-      }
-      setProjects(projectsList);
+      setProjects((projData ?? []) as Project[]);
 
       const { data: callsData } = await (supabase as any)
         .from("calls")
@@ -143,16 +95,11 @@ function DashboardPage() {
       if (!cancelled) setTodayJobs((jobsData ?? []) as ScheduledJob[]);
 
       setLoading(false);
-
-      // Show onboarding wizard once for demo users
-      if (isDemo && !hasCompletedOnboarding()) {
-        setShowOnboarding(true);
-      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [ready, isDemo]);
+  }, [ready]);
 
   if (!ready) return null;
 
@@ -192,13 +139,6 @@ function DashboardPage() {
         </Link>
       }
     >
-      {showOnboarding && (
-        <OnboardingWizard
-          inviteeName="there"
-          onClose={() => setShowOnboarding(false)}
-        />
-      )}
-
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
         {stats.map((s) => (
           <div key={s.label} className="rounded-xl border border-border bg-card p-5 shadow-card">
