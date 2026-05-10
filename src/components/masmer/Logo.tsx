@@ -1,10 +1,10 @@
 export function Logo({ className = "" }: { className?: string }) {
   return (
     <a href="#top" className={`flex items-center gap-2 ${className}`}>
-      <NailIcon className="h-7 w-7 text-gold" />
-      <span className="text-lg font-extrabold tracking-tight">
-        <span className="text-gold">Masmer</span>
-        <span className="text-foreground"> AI</span>
+      <NailIcon className="h-7 w-7 text-orange" />
+      <span className="font-display text-lg font-bold tracking-tight">
+        <span className="text-foreground">Masmer</span>
+        <span className="text-orange"> AI</span>
       </span>
     </a>
   );
