@@ -14,6 +14,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RequestAccessRouteImport } from './routes/request-access'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as EstimateRouteImport } from './routes/estimate'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -47,6 +48,11 @@ const ProjectsRoute = ProjectsRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlannerRoute = PlannerRouteImport.update({
+  id: '/planner',
+  path: '/planner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/estimate': typeof EstimateRoute
   '/login': typeof LoginRoute
+  '/planner': typeof PlannerRoute
   '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/request-access': typeof RequestAccessRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/estimate': typeof EstimateRoute
   '/login': typeof LoginRoute
+  '/planner': typeof PlannerRoute
   '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/request-access': typeof RequestAccessRoute
@@ -135,6 +143,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/estimate': typeof EstimateRoute
   '/login': typeof LoginRoute
+  '/planner': typeof PlannerRoute
   '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/request-access': typeof RequestAccessRoute
@@ -153,6 +162,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/estimate'
     | '/login'
+    | '/planner'
     | '/privacy'
     | '/projects'
     | '/request-access'
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/estimate'
     | '/login'
+    | '/planner'
     | '/privacy'
     | '/projects'
     | '/request-access'
@@ -185,6 +196,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/estimate'
     | '/login'
+    | '/planner'
     | '/privacy'
     | '/projects'
     | '/request-access'
@@ -202,6 +214,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   EstimateRoute: typeof EstimateRoute
   LoginRoute: typeof LoginRoute
+  PlannerRoute: typeof PlannerRoute
   PrivacyRoute: typeof PrivacyRoute
   ProjectsRoute: typeof ProjectsRouteWithChildren
   RequestAccessRoute: typeof RequestAccessRoute
@@ -245,6 +258,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/planner': {
+      id: '/planner'
+      path: '/planner'
+      fullPath: '/planner'
+      preLoaderRoute: typeof PlannerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -344,6 +364,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   EstimateRoute: EstimateRoute,
   LoginRoute: LoginRoute,
+  PlannerRoute: PlannerRoute,
   PrivacyRoute: PrivacyRoute,
   ProjectsRoute: ProjectsRouteWithChildren,
   RequestAccessRoute: RequestAccessRoute,
@@ -354,3 +375,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
