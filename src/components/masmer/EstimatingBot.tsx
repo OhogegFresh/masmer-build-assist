@@ -51,12 +51,12 @@ export function EstimatingBot() {
       <div className="relative mx-auto max-w-7xl px-6">
         <Reveal>
           <div className="text-center mb-16">
-            <p className="text-gold font-bold uppercase tracking-widest text-xs mb-3">
+            <p className="text-orange font-bold uppercase tracking-widest text-xs mb-3">
               Hero Feature
             </p>
             <h2 className="text-4xl md:text-6xl font-black tracking-tighter">
               Your Smartest{" "}
-              <span className="text-gradient-gold">Estimating Tool</span> Yet
+              <span className="text-gradient-orange">Estimating Tool</span> Yet
             </h2>
             <p className="mt-5 text-lg text-muted-foreground max-w-2xl mx-auto">
               Stop spending hours building estimates. Describe the project,
@@ -68,11 +68,11 @@ export function EstimatingBot() {
         <div className="grid gap-6 md:grid-cols-5 mb-16">
           {steps.map((s, i) => (
             <Reveal key={s.title} delay={i * 100}>
-              <div className="relative h-full rounded-xl border border-border bg-card p-6 shadow-card hover:border-gold/50 transition-colors">
-                <div className="absolute -top-3 -left-3 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-gold text-background text-xs font-black shadow-gold">
+              <div className="relative h-full rounded-xl border border-border bg-card p-6 shadow-card hover:border-orange/50 transition-colors">
+                <div className="absolute -top-3 -left-3 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-orange text-background text-xs font-black shadow-orange">
                   {i + 1}
                 </div>
-                <s.icon className="h-7 w-7 text-gold mb-3" />
+                <s.icon className="h-7 w-7 text-orange mb-3" />
                 <h3 className="font-bold mb-1.5">{s.title}</h3>
                 <p className="text-sm text-muted-foreground">{s.text}</p>
               </div>
@@ -81,11 +81,11 @@ export function EstimatingBot() {
         </div>
 
         <Reveal>
-          <div className="rounded-2xl border border-gold/30 bg-card shadow-gold overflow-hidden max-w-4xl mx-auto">
+          <div className="rounded-2xl border border-orange/30 bg-card shadow-orange overflow-hidden max-w-4xl mx-auto">
             <div className="flex items-center justify-between border-b border-border px-6 py-4 bg-secondary/40">
               <div className="flex items-center gap-2">
                 <div className="h-3 w-3 rounded-full bg-destructive/70" />
-                <div className="h-3 w-3 rounded-full bg-gold/70" />
+                <div className="h-3 w-3 rounded-full bg-orange/70" />
                 <div className="h-3 w-3 rounded-full bg-muted-foreground/40" />
               </div>
               <p className="text-xs text-muted-foreground">
@@ -95,7 +95,7 @@ export function EstimatingBot() {
             <div className="p-8">
               <div className="flex items-start justify-between mb-6">
                 <div>
-                  <p className="text-gold text-xs font-bold uppercase tracking-widest">
+                  <p className="text-orange text-xs font-bold uppercase tracking-widest">
                     Project Estimate
                   </p>
                   <h4 className="text-2xl font-black">Bathroom Renovation</h4>
@@ -105,7 +105,7 @@ export function EstimatingBot() {
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-muted-foreground">Total</p>
-                  <p className="text-3xl font-black text-gradient-gold">
+                  <p className="text-3xl font-black text-gradient-orange">
                     $14,820
                   </p>
                 </div>

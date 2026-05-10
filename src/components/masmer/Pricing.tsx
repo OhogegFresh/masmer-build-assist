@@ -36,7 +36,7 @@ export function Pricing() {
         <Reveal>
           <div className="text-center mb-14">
             <h2 className="text-4xl md:text-6xl font-black tracking-tighter">
-              Simple, <span className="text-gradient-gold">Transparent</span>{" "}
+              Simple, <span className="text-gradient-orange">Transparent</span>{" "}
               Pricing
             </h2>
             <p className="mt-4 text-muted-foreground">

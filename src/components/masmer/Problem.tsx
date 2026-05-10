@@ -27,14 +27,14 @@ export function Problem() {
           <h2 className="text-center text-4xl md:text-6xl font-black tracking-tighter">
             Contractors Lose
             <br />
-            <span className="text-gradient-gold">$17,000/Month</span> in Missed Calls
+            <span className="text-gradient-orange">$17,000/Month</span> in Missed Calls
           </h2>
         </Reveal>
         <div className="mt-16 grid gap-6 md:grid-cols-3">
           {pains.map((p, i) => (
             <Reveal key={p.title} delay={i * 100}>
-              <div className="h-full rounded-xl border border-border bg-card p-8 shadow-card hover:border-gold/40 transition-colors">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gold/10 text-gold mb-5">
+              <div className="h-full rounded-xl border border-border bg-card p-8 shadow-card hover:border-orange/40 transition-colors">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange/10 text-orange mb-5">
                   <p.icon className="h-6 w-6" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">{p.title}</h3>
