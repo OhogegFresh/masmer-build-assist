@@ -1,7 +1,9 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Search, LogOut, ShieldAlert, Copy, Ban, CalendarPlus, Check, X, RefreshCw } from "lucide-react";
+import { AppShell } from "@/components/masmer/AppShell";
+import { useRequireAuth } from "@/components/masmer/useRequireAuth";
+import { Loader2, RefreshCw, Search, ShieldCheck, Users } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin")({
@@ -11,670 +13,170 @@ export const Route = createFileRoute("/admin")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>) => ({
-    tab: typeof s.tab === "string" ? s.tab : undefined,
-  }),
   component: AdminPage,
 });
 
-type Row = {
+type AdminUser = {
   id: string;
-  full_name: string;
-  business_name: string;
-  phone: string;
+  user_id: string | null;
   email: string;
-  contractor_type: string;
-  feature_interest: string;
-  created_at: string;
-  demo_access: boolean | null;
-  demo_expires_at: string | null;
-};
-
-type DemoInviteRow = {
-  id: string;
-  invite_code: string;
-  invitee_name: string | null;
-  invitee_email: string | null;
-  invitee_company: string | null;
-  expires_at: string;
-  activated_at: string | null;
-  is_active: boolean;
-  page_views: number;
-  last_seen: string | null;
-};
-
-type AccessRequestRow = {
-  id: string;
-  full_name: string;
-  email: string;
-  phone: string | null;
+  full_name: string | null;
   business_name: string | null;
-  business_type: string | null;
-  referral_source: string | null;
-  message: string | null;
-  status: string;
+  role: string;
+  is_active: boolean;
   created_at: string;
-  reviewed_at: string | null;
 };
 
 function AdminPage() {
-  const navigate = useNavigate();
-  const initialTab = (Route.useSearch() as any).tab;
-  const [authChecked, setAuthChecked] = useState(false);
-  const [authed, setAuthed] = useState(false);
+  const ready = useRequireAuth({ adminOnly: true });
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [rows, setRows] = useState<Row[]>([]);
-  const [forbidden, setForbidden] = useState(false);
   const [search, setSearch] = useState("");
-  const [contractorType, setContractorType] = useState("");
-  const [feature, setFeature] = useState("");
-  const [extending, setExtending] = useState<string | null>(null);
-  const [tab, setTab] = useState<"waitlist" | "demos" | "requests">(
-    initialTab === "requests" ? "requests" : initialTab === "demos" ? "demos" : "waitlist",
-  );
-  const [demos, setDemos] = useState<DemoInviteRow[]>([]);
-  const [demosLoading, setDemosLoading] = useState(true);
-  const [demoBusy, setDemoBusy] = useState<string | null>(null);
-  const [requests, setRequests] = useState<AccessRequestRow[]>([]);
-  const [requestsLoading, setRequestsLoading] = useState(true);
-  const [expandedMsg, setExpandedMsg] = useState<string | null>(null);
-  const [approveTarget, setApproveTarget] = useState<AccessRequestRow | null>(null);
-  const [approveBusy, setApproveBusy] = useState(false);
-  const [approvePwd, setApprovePwd] = useState("");
-  const [denyBusy, setDenyBusy] = useState<string | null>(null);
 
-  async function loadRequests() {
-    setRequestsLoading(true);
-    const { data } = await (supabase as any)
-      .from("access_requests").select("*").order("created_at", { ascending: false });
-    setRequests((data as AccessRequestRow[]) ?? []);
-    setRequestsLoading(false);
-  }
+  async function loadUsers() {
+    setLoading(true);
+    const { data, error } = await (supabase as any)
+      .from("app_users")
+      .select("id,user_id,email,full_name,business_name,role,is_active,created_at")
+      .order("created_at", { ascending: false });
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) {
-        navigate({ to: "/login" });
-        return;
-      }
-      setAuthed(true);
-      setAuthChecked(true);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (!session) navigate({ to: "/login" });
-    });
-    return () => sub.subscription.unsubscribe();
-  }, [navigate]);
-
-  useEffect(() => {
-    if (!authed) return;
-    (async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("waitlist_signups")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) {
-        toast.error("Failed to load");
-        setLoading(false);
-        return;
-      }
-      if (!data || data.length === 0) {
-        // Could be empty or not admin — verify role
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData.user) {
-          const { data: roles } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", userData.user.id)
-            .eq("role", "admin")
-            .maybeSingle();
-          if (!roles) setForbidden(true);
-        }
-      }
-      setRows((data as Row[]) ?? []);
-      setLoading(false);
-    })();
-  }, [authed]);
-
-  useEffect(() => {
-    if (!authed) return;
-    (async () => {
-      setDemosLoading(true);
-      const { data } = await (supabase as any)
-        .from("demo_invites")
-        .select("*")
-        .order("created_at", { ascending: false });
-      setDemos((data as DemoInviteRow[]) ?? []);
-      setDemosLoading(false);
-    })();
-    loadRequests();
-  }, [authed]);
-
-  function genPwd() {
-    const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
-    let s = "";
-    for (let i = 0; i < 12; i++) s += chars[Math.floor(Math.random() * chars.length)];
-    return s + "!";
-  }
-
-  function openApprove(r: AccessRequestRow) {
-    setApproveTarget(r);
-    setApprovePwd(genPwd());
-  }
-
-  async function confirmApprove() {
-    if (!approveTarget) return;
-    setApproveBusy(true);
-    const { data, error } = await supabase.functions.invoke("approve-access-request", {
-      body: {
-        request_id: approveTarget.id,
-        email: approveTarget.email,
-        password: approvePwd,
-        full_name: approveTarget.full_name,
-        business_name: approveTarget.business_name,
-      },
-    });
-    setApproveBusy(false);
-    if (error || (data as any)?.error) {
-      return toast.error((data as any)?.error ?? error?.message ?? "Failed");
+    if (error) {
+      toast.error("Could not load admin users");
+      setUsers([]);
+    } else {
+      setUsers((data ?? []) as AdminUser[]);
     }
-    toast.success("Approved & email sent");
-    setApproveTarget(null);
-    loadRequests();
+    setLoading(false);
   }
 
-  async function denyRequest(r: AccessRequestRow) {
-    setDenyBusy(r.id);
-    const { error } = await (supabase as any).from("access_requests")
-      .update({ status: "denied", reviewed_at: new Date().toISOString() })
-      .eq("id", r.id);
-    setDenyBusy(null);
-    if (error) return toast.error("Failed to deny");
-    toast.success("Marked as denied");
-    loadRequests();
-  }
-
-  async function extendDemo(row: DemoInviteRow) {
-    setDemoBusy(row.id);
-    const base = new Date(row.expires_at) > new Date() ? new Date(row.expires_at) : new Date();
-    const next = new Date(base.getTime() + 7 * 24 * 60 * 60 * 1000);
-    const { error } = await (supabase as any)
-      .from("demo_invites")
-      .update({ expires_at: next.toISOString(), is_active: true })
-      .eq("id", row.id);
-    setDemoBusy(null);
-    if (error) return toast.error("Failed to extend");
-    setDemos((ds) => ds.map((d) => (d.id === row.id ? { ...d, expires_at: next.toISOString(), is_active: true } : d)));
-    toast.success("Extended 7 more days");
-  }
-
-  async function revokeDemo(row: DemoInviteRow) {
-    setDemoBusy(row.id);
-    const { error } = await (supabase as any)
-      .from("demo_invites")
-      .update({ is_active: false })
-      .eq("id", row.id);
-    setDemoBusy(null);
-    if (error) return toast.error("Failed to revoke");
-    setDemos((ds) => ds.map((d) => (d.id === row.id ? { ...d, is_active: false } : d)));
-    toast.success("Demo revoked");
-  }
-
-  function copyDemoLink(row: DemoInviteRow) {
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://masmer-build-assist.lovable.app";
-    const url = `${origin}/demo/${row.invite_code}`;
-    navigator.clipboard.writeText(url);
-    toast.success("Link copied");
-  }
-
-  const types = useMemo(
-    () => Array.from(new Set(rows.map((r) => r.contractor_type))).sort(),
-    [rows],
-  );
-  const features = useMemo(
-    () => Array.from(new Set(rows.map((r) => r.feature_interest))).sort(),
-    [rows],
-  );
+  useEffect(() => {
+    if (!ready) return;
+    void loadUsers();
+  }, [ready]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return rows.filter((r) => {
-      if (contractorType && r.contractor_type !== contractorType) return false;
-      if (feature && r.feature_interest !== feature) return false;
-      if (!q) return true;
-      return (
-        r.full_name.toLowerCase().includes(q) ||
-        r.business_name.toLowerCase().includes(q) ||
-        r.email.toLowerCase().includes(q) ||
-        r.phone.toLowerCase().includes(q)
-      );
-    });
-  }, [rows, search, contractorType, feature]);
-
-  async function signOut() {
-    await supabase.auth.signOut();
-    navigate({ to: "/login" });
-  }
-
-  async function extendAccess(row: Row) {
-    setExtending(row.id);
-    const base =
-      row.demo_expires_at && new Date(row.demo_expires_at) > new Date()
-        ? new Date(row.demo_expires_at)
-        : new Date();
-    const next = new Date(base.getTime() + 7 * 24 * 60 * 60 * 1000);
-    const { error } = await supabase
-      .from("waitlist_signups")
-      .update({ demo_expires_at: next.toISOString(), demo_access: true })
-      .eq("id", row.id);
-    setExtending(null);
-    if (error) {
-      toast.error("Failed to extend access");
-      return;
-    }
-    setRows((rs) =>
-      rs.map((r) =>
-        r.id === row.id
-          ? { ...r, demo_expires_at: next.toISOString(), demo_access: true }
-          : r,
-      ),
+    if (!q) return users;
+    return users.filter((user) =>
+      [user.email, user.full_name, user.business_name, user.role]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(q)),
     );
-    toast.success("Extended 7 more days");
-  }
+  }, [users, search]);
 
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-orange" />
-      </div>
-    );
-  }
+  const activeUsers = users.filter((user) => user.is_active).length;
+  const admins = users.filter((user) => user.role === "admin").length;
+
+  if (!ready) return null;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border">
-        <div className="mx-auto max-w-7xl px-6 py-5 flex items-center justify-between">
-          <div>
-            <Link to="/" className="text-xs text-muted-foreground hover:text-orange">
-              ← Site
-            </Link>
-            <h1 className="text-2xl font-black tracking-tighter mt-1">
-              Waitlist <span className="text-gradient-orange">Admin</span>
-            </h1>
+    <AppShell
+      title="Admin"
+      action={
+        <button
+          type="button"
+          onClick={loadUsers}
+          disabled={loading}
+          className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-semibold text-foreground hover:border-orange hover:text-orange disabled:opacity-60"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          Refresh
+        </button>
+      }
+    >
+      <div className="grid gap-4 md:grid-cols-3 mb-6">
+        <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+          <div className="flex items-center justify-between">
+            <p className="text-xs uppercase text-muted-foreground">Registered Users</p>
+            <Users className="h-4 w-4 text-orange" />
           </div>
-          <button
-            onClick={signOut}
-            className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:border-orange hover:text-orange"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </button>
+          <p className="font-display mt-3 text-2xl font-bold">{users.length}</p>
         </div>
-      </header>
-
-      <main className="mx-auto max-w-7xl px-6 py-8">
-        {forbidden ? (
-          <div className="rounded-2xl border border-destructive/40 bg-card p-10 text-center">
-            <ShieldAlert className="mx-auto h-12 w-12 text-destructive" />
-            <h2 className="mt-4 text-2xl font-black">Access denied</h2>
-            <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-              Your account doesn't have admin access. Ask an existing admin to
-              grant you the <code className="text-orange">admin</code> role in the
-              <code className="text-orange"> user_roles</code> table.
-            </p>
+        <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+          <div className="flex items-center justify-between">
+            <p className="text-xs uppercase text-muted-foreground">Active Accounts</p>
+            <Users className="h-4 w-4 text-orange" />
           </div>
-        ) : (
-          <>
-            <div className="mb-6 flex gap-2 border-b border-border">
-              <button
-                onClick={() => setTab("waitlist")}
-                className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors ${tab === "waitlist" ? "border-orange text-orange" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-              >
-                Waitlist Signups
-              </button>
-              <button
-                onClick={() => setTab("demos")}
-                className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors ${tab === "demos" ? "border-orange text-orange" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-              >
-                Demo Invites
-              </button>
-              <button
-                onClick={() => setTab("requests")}
-                className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors ${tab === "requests" ? "border-orange text-orange" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-              >
-                Access Requests
-                {requests.filter((r) => r.status === "pending").length > 0 && (
-                  <span className="ml-2 rounded-full bg-orange px-1.5 py-0.5 text-[10px] text-white">
-                    {requests.filter((r) => r.status === "pending").length}
-                  </span>
-                )}
-              </button>
-            </div>
+          <p className="font-display mt-3 text-2xl font-bold">{activeUsers}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+          <div className="flex items-center justify-between">
+            <p className="text-xs uppercase text-muted-foreground">Admins</p>
+            <ShieldCheck className="h-4 w-4 text-orange" />
+          </div>
+          <p className="font-display mt-3 text-2xl font-bold">{admins}</p>
+        </div>
+      </div>
 
-            {tab === "waitlist" && (
-            <>
-            <div className="grid gap-3 md:grid-cols-4 mb-6">
-              <div className="md:col-span-2 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input
-                  placeholder="Search name, business, email, phone..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded-md border border-border bg-card pl-10 pr-4 py-2.5 text-sm focus:border-orange focus:outline-none focus:ring-2 focus:ring-orange/40"
-                />
-              </div>
-              <select
-                value={contractorType}
-                onChange={(e) => setContractorType(e.target.value)}
-                className="rounded-md border border-border bg-card px-3 py-2.5 text-sm focus:border-orange focus:outline-none"
-              >
-                <option value="">All contractor types</option>
-                {types.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-              <select
-                value={feature}
-                onChange={(e) => setFeature(e.target.value)}
-                className="rounded-md border border-border bg-card px-3 py-2.5 text-sm focus:border-orange focus:outline-none"
-              >
-                <option value="">All feature interests</option>
-                {features.map((f) => (
-                  <option key={f} value={f}>{f}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="text-xs text-muted-foreground mb-3">
-              Showing {filtered.length} of {rows.length} signups
-            </div>
-
-            <div className="rounded-2xl border border-border bg-card overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
-                    <tr>
-                      <th className="text-left px-4 py-3">Name</th>
-                      <th className="text-left px-4 py-3">Business</th>
-                      <th className="text-left px-4 py-3">Phone</th>
-                      <th className="text-left px-4 py-3">Email</th>
-                      <th className="text-left px-4 py-3">Type</th>
-                      <th className="text-left px-4 py-3">Interest</th>
-                      <th className="text-left px-4 py-3">Submitted</th>
-                      <th className="text-left px-4 py-3">Demo Access</th>
-                      <th className="text-left px-4 py-3">Expires</th>
-                      <th className="text-left px-4 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading ? (
-                      <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">
-                        <Loader2 className="inline h-5 w-5 animate-spin text-orange" />
-                      </td></tr>
-                    ) : filtered.length === 0 ? (
-                      <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">
-                        No signups match these filters.
-                      </td></tr>
-                    ) : filtered.map((r) => {
-                      const expired =
-                        !r.demo_access ||
-                        !r.demo_expires_at ||
-                        new Date(r.demo_expires_at) < new Date();
-                      return (
-                      <tr key={r.id} className="border-t border-border hover:bg-secondary/20">
-                        <td className="px-4 py-3 font-medium">{r.full_name}</td>
-                        <td className="px-4 py-3">{r.business_name}</td>
-                        <td className="px-4 py-3 font-mono text-xs">{r.phone}</td>
-                        <td className="px-4 py-3 font-mono text-xs">{r.email}</td>
-                        <td className="px-4 py-3"><span className="rounded-full bg-secondary px-2 py-0.5 text-xs">{r.contractor_type}</span></td>
-                        <td className="px-4 py-3"><span className="rounded-full border border-orange/40 text-orange px-2 py-0.5 text-xs">{r.feature_interest}</span></td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                          {new Date(r.created_at).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-3">
-                          {expired ? (
-                            <span className="rounded-full bg-destructive/15 text-destructive border border-destructive/40 px-2 py-0.5 text-xs font-semibold">Expired</span>
-                          ) : (
-                            <span className="rounded-full bg-green-500/15 text-green-400 border border-green-500/40 px-2 py-0.5 text-xs font-semibold">Active</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                          {r.demo_expires_at ? new Date(r.demo_expires_at).toLocaleDateString() : "—"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <button
-                            onClick={() => extendAccess(r)}
-                            disabled={extending === r.id}
-                            className="inline-flex items-center gap-1 rounded-md border border-orange/40 text-orange hover:bg-orange/10 px-2 py-1 text-xs font-semibold disabled:opacity-50"
-                          >
-                            {extending === r.id && <Loader2 className="h-3 w-3 animate-spin" />}
-                            +7 days
-                          </button>
-                        </td>
-                      </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            </>
-            )}
-
-            {tab === "demos" && (
-              <div className="rounded-2xl border border-border bg-card overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
-                      <tr>
-                        <th className="text-left px-4 py-3">Code</th>
-                        <th className="text-left px-4 py-3">Name</th>
-                        <th className="text-left px-4 py-3">Email</th>
-                        <th className="text-left px-4 py-3">Company</th>
-                        <th className="text-left px-4 py-3">Status</th>
-                        <th className="text-left px-4 py-3">Days Left</th>
-                        <th className="text-left px-4 py-3">Views</th>
-                        <th className="text-left px-4 py-3">Last Seen</th>
-                        <th className="text-left px-4 py-3">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {demosLoading ? (
-                        <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
-                          <Loader2 className="inline h-5 w-5 animate-spin text-orange" />
-                        </td></tr>
-                      ) : demos.length === 0 ? (
-                        <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
-                          No demo invites yet.
-                        </td></tr>
-                      ) : demos.map((d) => {
-                        const expired = !d.is_active || new Date(d.expires_at) < new Date();
-                        const ms = new Date(d.expires_at).getTime() - Date.now();
-                        const daysLeft = Math.max(0, Math.ceil(ms / (24 * 60 * 60 * 1000)));
-                        return (
-                          <tr key={d.id} className="border-t border-border hover:bg-secondary/20">
-                            <td className="px-4 py-3 font-mono text-xs">{d.invite_code}</td>
-                            <td className="px-4 py-3 font-medium">{d.invitee_name ?? "—"}</td>
-                            <td className="px-4 py-3 font-mono text-xs">{d.invitee_email ?? "—"}</td>
-                            <td className="px-4 py-3">{d.invitee_company ?? "—"}</td>
-                            <td className="px-4 py-3">
-                              {expired ? (
-                                <span className="rounded-full bg-destructive/15 text-destructive border border-destructive/40 px-2 py-0.5 text-xs font-semibold">{!d.is_active ? "Revoked" : "Expired"}</span>
-                              ) : (
-                                <span className="rounded-full bg-green-500/15 text-green-400 border border-green-500/40 px-2 py-0.5 text-xs font-semibold">Active</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-xs">{daysLeft}</td>
-                            <td className="px-4 py-3 text-xs">{d.page_views}</td>
-                            <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                              {d.last_seen ? new Date(d.last_seen).toLocaleString() : "Never"}
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex flex-wrap gap-1.5">
-                                <button
-                                  onClick={() => copyDemoLink(d)}
-                                  className="inline-flex items-center gap-1 rounded-md border border-border hover:border-orange hover:text-orange px-2 py-1 text-xs"
-                                >
-                                  <Copy className="h-3 w-3" /> Copy
-                                </button>
-                                <button
-                                  onClick={() => extendDemo(d)}
-                                  disabled={demoBusy === d.id}
-                                  className="inline-flex items-center gap-1 rounded-md border border-orange/40 text-orange hover:bg-orange/10 px-2 py-1 text-xs font-semibold disabled:opacity-50"
-                                >
-                                  {demoBusy === d.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CalendarPlus className="h-3 w-3" />}
-                                  +7d
-                                </button>
-                                {d.is_active && (
-                                  <button
-                                    onClick={() => revokeDemo(d)}
-                                    disabled={demoBusy === d.id}
-                                    className="inline-flex items-center gap-1 rounded-md border border-destructive/40 text-destructive hover:bg-destructive/10 px-2 py-1 text-xs font-semibold disabled:opacity-50"
-                                  >
-                                    <Ban className="h-3 w-3" /> Revoke
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {tab === "requests" && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-muted-foreground">{requests.length} total</div>
-                  <button onClick={loadRequests} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-orange">
-                    <RefreshCw className="h-3 w-3" /> Refresh
-                  </button>
-                </div>
-                <div className="rounded-2xl border border-border bg-card overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
-                        <tr>
-                          <th className="text-left px-4 py-3">Submitted</th>
-                          <th className="text-left px-4 py-3">Name</th>
-                          <th className="text-left px-4 py-3">Email</th>
-                          <th className="text-left px-4 py-3">Phone</th>
-                          <th className="text-left px-4 py-3">Business</th>
-                          <th className="text-left px-4 py-3">Type</th>
-                          <th className="text-left px-4 py-3">Source</th>
-                          <th className="text-left px-4 py-3">Message</th>
-                          <th className="text-left px-4 py-3">Status</th>
-                          <th className="text-left px-4 py-3">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {requestsLoading ? (
-                          <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">
-                            <Loader2 className="inline h-5 w-5 animate-spin text-orange" />
-                          </td></tr>
-                        ) : requests.length === 0 ? (
-                          <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">
-                            No access requests yet.
-                          </td></tr>
-                        ) : requests.map((r) => {
-                          const isExpanded = expandedMsg === r.id;
-                          const msg = r.message ?? "";
-                          const truncated = msg.length > 50 ? msg.slice(0, 50) + "…" : msg;
-                          return (
-                            <tr key={r.id} className="border-t border-border hover:bg-secondary/20 align-top">
-                              <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</td>
-                              <td className="px-4 py-3 font-medium">{r.full_name}</td>
-                              <td className="px-4 py-3 font-mono text-xs">{r.email}</td>
-                              <td className="px-4 py-3 font-mono text-xs">{r.phone ?? "—"}</td>
-                              <td className="px-4 py-3">{r.business_name ?? "—"}</td>
-                              <td className="px-4 py-3 text-xs">{r.business_type ?? "—"}</td>
-                              <td className="px-4 py-3 text-xs">{r.referral_source ?? "—"}</td>
-                              <td className="px-4 py-3 text-xs max-w-[200px]">
-                                {msg ? (
-                                  <button onClick={() => setExpandedMsg(isExpanded ? null : r.id)}
-                                    className="text-left text-muted-foreground hover:text-foreground">
-                                    {isExpanded ? msg : truncated}
-                                  </button>
-                                ) : "—"}
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${
-                                  r.status === "approved" ? "bg-green-500/15 text-green-400 border-green-500/40" :
-                                  r.status === "denied" ? "bg-destructive/15 text-destructive border-destructive/40" :
-                                  "bg-orange/15 text-orange border-orange/40"
-                                }`}>{r.status[0].toUpperCase() + r.status.slice(1)}</span>
-                              </td>
-                              <td className="px-4 py-3">
-                                {r.status === "pending" && (
-                                  <div className="flex flex-wrap gap-1.5">
-                                    <button onClick={() => openApprove(r)}
-                                      className="inline-flex items-center gap-1 rounded-md border border-green-500/40 text-green-400 hover:bg-green-500/10 px-2 py-1 text-xs font-semibold">
-                                      <Check className="h-3 w-3" /> Approve
-                                    </button>
-                                    <button onClick={() => denyRequest(r)} disabled={denyBusy === r.id}
-                                      className="inline-flex items-center gap-1 rounded-md border border-destructive/40 text-destructive hover:bg-destructive/10 px-2 py-1 text-xs font-semibold disabled:opacity-50">
-                                      {denyBusy === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />} Deny
-                                    </button>
-                                  </div>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </main>
-
-      {approveTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => !approveBusy && setApproveTarget(null)}>
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6" onClick={(e) => e.stopPropagation()}>
-            <h2 className="font-display text-2xl font-bold tracking-tight">Approve access</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Create account for this user?</p>
-            <div className="mt-4 rounded-md border border-border bg-background/40 p-3 text-sm space-y-1">
-              <div><span className="text-muted-foreground">Name:</span> <strong>{approveTarget.full_name}</strong></div>
-              <div><span className="text-muted-foreground">Business:</span> {approveTarget.business_name ?? "—"}</div>
-              <div><span className="text-muted-foreground">Type:</span> {approveTarget.business_type ?? "—"}</div>
-            </div>
-            <div className="mt-4 space-y-3">
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Email</label>
-                <input value={approveTarget.email} readOnly
-                  className="w-full rounded-md border border-border bg-background/60 px-3 py-2 text-sm font-mono" />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Temporary password</label>
-                <div className="flex gap-2">
-                  <input value={approvePwd} onChange={(e) => setApprovePwd(e.target.value)}
-                    className="flex-1 rounded-md border border-border bg-background/60 px-3 py-2 text-sm font-mono" />
-                  <button type="button" onClick={() => setApprovePwd(genPwd())}
-                    className="rounded-md border border-border px-3 text-xs hover:border-orange hover:text-orange">
-                    <RefreshCw className="h-3 w-3" />
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="mt-6 flex gap-2 justify-end">
-              <button onClick={() => setApproveTarget(null)} disabled={approveBusy}
-                className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary">Cancel</button>
-              <button onClick={confirmApprove} disabled={approveBusy || approvePwd.length < 6}
-                className="inline-flex items-center gap-2 rounded-md bg-orange text-white px-4 py-2 text-sm font-bold hover:bg-orange/90 disabled:opacity-60">
-                {approveBusy && <Loader2 className="h-4 w-4 animate-spin" />}
-                Send Approval & Create Account
-              </button>
-            </div>
+      <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
+        <div className="border-b border-border p-4">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search users..."
+              className="w-full rounded-md border border-border bg-background/60 py-2.5 pl-10 pr-4 text-sm focus:border-orange focus:outline-none focus:ring-2 focus:ring-orange/40"
+            />
           </div>
         </div>
-      )}
-    </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-secondary/40 text-xs uppercase text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3 text-left">User</th>
+                <th className="px-4 py-3 text-left">Business</th>
+                <th className="px-4 py-3 text-left">Role</th>
+                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Joined</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">
+                    <Loader2 className="inline h-5 w-5 animate-spin text-orange" />
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">
+                    No users found.
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((user) => (
+                  <tr key={user.id} className="border-t border-border hover:bg-secondary/20">
+                    <td className="px-4 py-3">
+                      <div className="font-medium">{user.full_name || "Unnamed user"}</div>
+                      <div className="font-mono text-xs text-muted-foreground">{user.email}</div>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{user.business_name || "—"}</td>
+                    <td className="px-4 py-3">
+                      <span className="rounded-full border border-orange/30 bg-orange/10 px-2 py-0.5 text-xs font-semibold text-orange">
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${
+                        user.is_active
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                          : "border-destructive/30 bg-destructive/10 text-destructive"
+                      }`}>
+                        {user.is_active ? "Active" : "Suspended"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </AppShell>
   );
 }
