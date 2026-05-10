@@ -5,6 +5,7 @@ import { AppShell } from "@/components/masmer/AppShell";
 import { useRequireAuth } from "@/components/masmer/useRequireAuth";
 import { Search, Loader2, Phone, Copy, ArrowRight, FolderPlus } from "lucide-react";
 import { toast } from "sonner";
+import { CustomerLeadPipe } from "@/components/masmer/CustomerLeadPipe";
 import {
   Sheet,
   SheetContent,
@@ -68,6 +69,7 @@ function CallsPage() {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | LeadStatus>("all");
   const [openCall, setOpenCall] = useState<Call | null>(null);
+  const [pipeCall, setPipeCall] = useState<Call | null>(null);
   const [convertCall, setConvertCall] = useState<Call | null>(null);
   const [form, setForm] = useState({
     customer_name: "",
