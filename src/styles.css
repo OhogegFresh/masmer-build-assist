@@ -265,3 +265,57 @@
     transform: translateY(0);
   }
 }
+
+/* ── Estimate page animations ─────────────────────────────────────────── */
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+.typing-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background-color: var(--orange, #E05C1A);
+  animation: typing-bounce 1.2s infinite ease-in-out;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes step-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--orange) 60%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--orange) 0%, transparent); }
+}
+.step-pulse { animation: step-pulse 1.6s infinite; }
+
+@keyframes check-pop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.check-pop { animation: check-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+@keyframes slide-up-fade {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.slide-up-fade { animation: slide-up-fade 0.4s ease-out both; }
+
+@keyframes btn-pulse-once {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+.btn-pulse-once { animation: btn-pulse-once 0.6s ease-in-out 1; }
+
+@keyframes confetti-fall {
+  0% { transform: translate3d(0, -10px, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate3d(var(--cx, 0), 200px, 0) rotate(540deg); opacity: 0; }
+}
+.confetti-piece {
+  position: absolute;
+  top: 0;
+  width: 6px;
+  height: 10px;
+  border-radius: 1px;
+  animation: confetti-fall 1s ease-out forwards;
+}

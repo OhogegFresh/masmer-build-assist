@@ -6,13 +6,16 @@ import {
   ArrowLeft,
   Send,
   Download,
-  Loader2,
   FileText,
   ClipboardList,
   ShoppingCart,
-  CheckCircle2,
   ExternalLink,
   AlertTriangle,
+  Check,
+  Wrench,
+  Home,
+  TreePine,
+  Hammer,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -82,8 +85,162 @@ const fmt = (n: number) =>
 const INITIAL: Msg = {
   role: "assistant",
   content:
-    "Hi! I'm your Masmer AI project assistant. Tell me about your project — who's the customer, where's the job, and what work needs to be done? I'll generate your full scope of work, private materials list, and crew punchlist.",
+    "Hey! 👋 I'm your Masmer AI estimating assistant. I'll help you build a complete professional scope of work and materials list in just a few minutes.\n\nTo get started — what's your full name?",
 };
+
+// ─── Helper: confirmation detection ───────────────────────────────────────────
+const CONFIRM_WORDS = ["yes", "correct", "looks good", "looks right", "generate", "sure", "go ahead", "yep", "yeah", "perfect", "confirm"];
+function isConfirmation(text: string) {
+  const t = text.toLowerCase();
+  return CONFIRM_WORDS.some((w) => t.includes(w));
+}
+
+// ─── Typing Indicator ─────────────────────────────────────────────────────────
+const GENERATING_MESSAGES = [
+  "Analyzing your project...",
+  "Calculating materials...",
+  "Checking Home Depot pricing...",
+  "Building your estimate...",
+  "Applying 15% buffer...",
+  "Generating scope of work...",
+  "Almost ready...",
+];
+
+function TypingIndicator({ generating }: { generating: boolean }) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    if (!generating) return;
+    const t = setInterval(() => setIdx((i) => (i + 1) % GENERATING_MESSAGES.length), 2000);
+    return () => clearInterval(t);
+  }, [generating]);
+
+  if (!generating) {
+    return (
+      <div className="bg-secondary/60 border border-border rounded-xl px-4 py-3 inline-flex items-center gap-1.5">
+        <span className="typing-dot" />
+        <span className="typing-dot" />
+        <span className="typing-dot" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-secondary/60 border border-orange/40 rounded-xl px-4 py-3 inline-flex items-start gap-3 max-w-[85%]">
+      <div className="h-7 w-7 rounded-full bg-gradient-orange flex items-center justify-center text-background font-black text-xs flex-shrink-0">
+        M
+      </div>
+      <div>
+        <div className="flex items-center gap-1.5 mb-1.5 h-3">
+          <span className="typing-dot" />
+          <span className="typing-dot" />
+          <span className="typing-dot" />
+        </div>
+        <p className="text-xs text-muted-foreground transition-opacity duration-300">
+          {GENERATING_MESSAGES[idx]}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Progress Steps ───────────────────────────────────────────────────────────
+const STEP_LABELS = ["Your Info", "Project Details", "Measurements", "Confirm", "Estimate Ready"];
+
+function computeStep(messages: Msg[], hasProject: boolean): number {
+  if (hasProject) return 5;
+  const userMsgs = messages.filter((m) => m.role === "user");
+  const allText = userMsgs.map((m) => m.content).join(" \n ").toLowerCase();
+  let step = 0;
+  // Step 1: name + address
+  const hasName = /\b[a-z]{2,}\s+[a-z]{2,}\b/i.test(allText);
+  const hasAddress = /\d+\s+\w+|street|st\.|ave|road|rd\.|blvd|lane|ln\.|drive|dr\.|\b\d{5}\b/i.test(allText);
+  if (hasName && hasAddress) step = 1;
+  // Step 2: project description (a longer message)
+  if (step >= 1 && userMsgs.some((m) => m.content.length > 25)) step = 2;
+  // Step 3: measurements
+  if (step >= 2 && /\d+\s*(ft|feet|sq|x|by|'|ft\.)/i.test(allText)) step = 3;
+  // Step 4: confirmation
+  if (step >= 3 && userMsgs.some((m) => isConfirmation(m.content))) step = 4;
+  return step;
+}
+
+function ProgressSteps({ current }: { current: number }) {
+  return (
+    <div className="flex items-center justify-between mb-8 px-2 max-w-3xl mx-auto">
+      {STEP_LABELS.map((label, i) => {
+        const done = i < current;
+        const active = i === current;
+        return (
+          <div key={i} className="flex items-center flex-1 last:flex-none">
+            <div className="flex flex-col items-center gap-2">
+              <div
+                className={[
+                  "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-all",
+                  done
+                    ? "bg-orange text-background border-2 border-orange"
+                    : active
+                      ? "bg-transparent text-orange border-2 border-orange step-pulse"
+                      : "bg-transparent text-muted-foreground border-2 border-border",
+                ].join(" ")}
+              >
+                {done ? <Check className="h-4 w-4" /> : i + 1}
+              </div>
+              <span
+                className="text-[11px] font-medium text-center whitespace-nowrap"
+                style={{ color: done || active ? "var(--orange)" : "var(--muted-foreground)" }}
+              >
+                {label}
+              </span>
+            </div>
+            {i < STEP_LABELS.length - 1 && (
+              <div
+                className={[
+                  "flex-1 h-0.5 mx-2 -mt-6 transition-colors",
+                  done ? "bg-orange" : "bg-border",
+                ].join(" ")}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Quick Start Prompts ──────────────────────────────────────────────────────
+const QUICK_PROMPTS = [
+  { icon: Wrench, title: "🔧 Interior Renovation", subtitle: "Flooring, drywall, painting", text: "I need help with an interior renovation" },
+  { icon: Home, title: "🏠 Exterior Work", subtitle: "Siding, roofing, gutters", text: "I need exterior work done on my house" },
+  { icon: TreePine, title: "🪵 Deck & Outdoor", subtitle: "Deck, railings, stairs", text: "I need deck work and outdoor improvements" },
+  { icon: Hammer, title: "🔨 Handyman & Repairs", subtitle: "Multiple small fixes and repairs", text: "I have several repairs and handyman work needed" },
+];
+
+// ─── Confetti ─────────────────────────────────────────────────────────────────
+function Confetti() {
+  const pieces = Array.from({ length: 26 });
+  return (
+    <div className="pointer-events-none absolute inset-x-0 top-0 h-0 overflow-visible">
+      {pieces.map((_, i) => {
+        const left = Math.random() * 100;
+        const cx = (Math.random() - 0.5) * 160;
+        const delay = Math.random() * 0.2;
+        const isOrange = i % 2 === 0;
+        return (
+          <span
+            key={i}
+            className="confetti-piece"
+            style={{
+              left: `${left}%`,
+              backgroundColor: isOrange ? "var(--orange)" : "#FFFFFF",
+              animationDelay: `${delay}s`,
+              ["--cx" as string]: `${cx}px`,
+            } as React.CSSProperties}
+          />
+        );
+      })}
+    </div>
+  );
+}
 
 // ─── Payment Schedule ─────────────────────────────────────────────────────────
 function calcPayments(total: number, deposit: number) {
@@ -571,10 +728,32 @@ function EstimatePage() {
   const [priceStep, setPriceStep] = useState(false);
   const [activeDoc, setActiveDoc] = useState<"contract" | "materials" | "punchlist">("contract");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const estimateRef = useRef<HTMLDivElement>(null);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [pulseDownloads, setPulseDownloads] = useState(false);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading, project]);
+
+  // Detect if the AI is generating the final estimate (after user confirmation)
+  const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+  const isGeneratingEstimate = loading && !!lastUserMsg && isConfirmation(lastUserMsg.content);
+  const currentStep = computeStep(messages, !!project);
+  const userHasSent = messages.some((m) => m.role === "user");
+
+  // Estimate ready celebration
+  useEffect(() => {
+    if (!project) return;
+    setShowCelebration(true);
+    setPulseDownloads(true);
+    const t1 = setTimeout(() => {
+      setShowCelebration(false);
+      estimateRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 1500);
+    const t2 = setTimeout(() => setPulseDownloads(false), 1200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [project]);
 
   const send = async () => {
     const text = input.trim();
@@ -651,28 +830,7 @@ function EstimatePage() {
         </div>
 
         {/* Progress Steps */}
-        <div className="flex items-center justify-center gap-2 mb-8 text-xs">
-          {[
-            { label: "1. Describe Project", done: messages.length > 1 },
-            { label: "2. Review Materials", done: !!project },
-            { label: "3. Enter Price", done: totalNum > 0 },
-            { label: "4. Download Docs", done: false },
-          ].map((step, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <div
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1 ${
-                  step.done
-                    ? "bg-orange/20 text-orange border border-orange/40"
-                    : "bg-secondary text-muted-foreground border border-border"
-                }`}
-              >
-                {step.done && <CheckCircle2 className="h-3 w-3" />}
-                {step.label}
-              </div>
-              {i < 3 && <div className="h-px w-4 bg-border" />}
-            </div>
-          ))}
-        </div>
+        <ProgressSteps current={currentStep} />
 
         {/* Chat Window */}
         <div className="rounded-2xl border border-orange/30 bg-card shadow-orange overflow-hidden flex flex-col h-[55vh] mb-8">
@@ -698,9 +856,7 @@ function EstimatePage() {
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-secondary/60 border border-border rounded-xl px-4 py-2.5">
-                  <Loader2 className="h-4 w-4 animate-spin text-orange" />
-                </div>
+                <TypingIndicator generating={isGeneratingEstimate} />
               </div>
             )}
           </div>
@@ -725,9 +881,43 @@ function EstimatePage() {
           </form>
         </div>
 
+        {/* Quick start prompts (before first user message) */}
+        {!userHasSent && !project && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8 -mt-4">
+            {QUICK_PROMPTS.map((p, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setInput(p.text)}
+                className="text-left rounded-xl border border-border border-l-4 border-l-orange/70 bg-card hover:shadow-orange hover:border-orange/60 transition-all p-4 cursor-pointer"
+              >
+                <p className="font-bold text-sm">{p.title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5" style={{ fontWeight: 400 }}>
+                  {p.subtitle}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Celebration overlay */}
+        {showCelebration && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-sm pointer-events-none">
+            <div className="relative flex flex-col items-center gap-4">
+              <Confetti />
+              <div className="check-pop h-20 w-20 rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center">
+                <Check className="h-10 w-10 text-green-400" strokeWidth={3} />
+              </div>
+              <p className="font-display text-2xl font-bold text-foreground animate-fade-in">
+                Estimate Ready! 🎉
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Materials Summary (shown after project generated) */}
         {project && (
-          <div className="space-y-6">
+          <div ref={estimateRef} className="space-y-6 slide-up-fade">
             {/* Materials Cost Card */}
             <div className="rounded-2xl border border-orange/30 bg-card shadow-orange overflow-hidden">
               <div className="p-5 border-b border-border flex items-center justify-between">
@@ -866,7 +1056,7 @@ function EstimatePage() {
 
                 {/* Document Download Buttons */}
                 {totalNum > 0 && (
-                  <div className="space-y-3">
+                  <div className={`space-y-3 ${pulseDownloads ? "btn-pulse-once" : ""}`}>
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">
                       Download Your Documents
                     </p>
