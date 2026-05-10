@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/masmer/AuthContext";
 import { toast } from "sonner";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, Lock } from "lucide-react";
 import { Logo } from "@/components/masmer/Logo";
 
 export const Route = createFileRoute("/login")({
@@ -16,6 +16,7 @@ export const Route = createFileRoute("/login")({
   }),
   validateSearch: (s: Record<string, unknown>) => ({
     suspended: s.suspended === "1" ? "1" : undefined,
+    team: s.team === "true" ? "true" : undefined,
   }),
   component: LoginPage,
 });
@@ -24,6 +25,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const { refresh } = useAuth();
   const search = Route.useSearch();
+  const teamMode = search.team === "true";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
@@ -65,8 +67,14 @@ function LoginPage() {
               Your account has been suspended. Contact us for help.
             </div>
           )}
-          <h1 className="font-display text-3xl font-bold tracking-tight text-center">Welcome back</h1>
-          <p className="mt-2 text-sm text-muted-foreground text-center">Sign in to your Masmer AI account</p>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-center inline-flex items-center justify-center gap-2 w-full">
+            {teamMode && <Lock className="h-5 w-5 text-orange" />}
+            {teamMode ? "Team Login" : "Welcome back"}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground text-center">
+            {teamMode ? "Internal team access" : "Sign in to your Masmer AI account"}
+          </p>
+          {teamMode && (
           <form onSubmit={onSubmit} className="mt-6 space-y-3">
             <input
               type="email" required placeholder="Email"
@@ -90,13 +98,23 @@ function LoginPage() {
               Sign In
             </button>
           </form>
-          <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-            <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
-          </div>
-          <Link to="/request-access"
-            className="block w-full text-center rounded-md border border-border px-6 py-3 text-sm font-bold text-foreground hover:border-orange hover:text-orange transition">
-            Request Access
-          </Link>
+          )}
+          {!teamMode && (
+            <div className="mt-6">
+              <Link to="/request-access"
+                className="block w-full text-center rounded-md bg-orange px-6 py-3 text-sm font-bold text-white hover:bg-orange/90 transition">
+                Request Access
+              </Link>
+            </div>
+          )}
+          {teamMode && (
+            <p className="mt-4 text-center">
+              <Link to="/login" search={{ team: "true" } as any}
+                className="text-[11px] text-muted-foreground/60 hover:text-orange transition">
+                Team access →
+              </Link>
+            </p>
+          )}
           <p className="mt-6 text-xs text-center text-muted-foreground">
             Questions? <a href="mailto:jacob@casacapsolutions.com" className="text-orange hover:underline">jacob@casacapsolutions.com</a>
           </p>
