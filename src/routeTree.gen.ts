@@ -10,9 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
-import { Route as SetupAdminRouteImport } from './routes/setup-admin'
 import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as RequestAccessRouteImport } from './routes/request-access'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PlannerRouteImport } from './routes/planner'
@@ -25,26 +23,15 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
 import { Route as PlannerRoutesRouteImport } from './routes/planner.routes'
 import { Route as CustomersIdRouteImport } from './routes/customers.$id'
-import { Route as DemoRouteImport } from './routes/demo.'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SetupAdminRoute = SetupAdminRouteImport.update({
-  id: '/setup-admin',
-  path: '/setup-admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RequestAccessRoute = RequestAccessRouteImport.update({
-  id: '/request-access',
-  path: '/request-access',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsRoute = ProjectsRouteImport.update({
@@ -107,11 +94,6 @@ const CustomersIdRoute = CustomersIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => CustomersRoute,
 } as any)
-const DemoRoute = DemoRouteImport.update({
-  id: '/demo/',
-  path: '/demo/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -123,11 +105,8 @@ export interface FileRoutesByFullPath {
   '/planner': typeof PlannerRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRouteWithChildren
-  '/request-access': typeof RequestAccessRoute
   '/settings': typeof SettingsRoute
-  '/setup-admin': typeof SetupAdminRoute
   '/terms': typeof TermsRoute
-  '/demo/': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
   '/planner/routes': typeof PlannerRoutesRoute
   '/projects/$id': typeof ProjectsIdRoute
@@ -142,11 +121,8 @@ export interface FileRoutesByTo {
   '/planner': typeof PlannerRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRouteWithChildren
-  '/request-access': typeof RequestAccessRoute
   '/settings': typeof SettingsRoute
-  '/setup-admin': typeof SetupAdminRoute
   '/terms': typeof TermsRoute
-  '/demo': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
   '/planner/routes': typeof PlannerRoutesRoute
   '/projects/$id': typeof ProjectsIdRoute
@@ -162,11 +138,8 @@ export interface FileRoutesById {
   '/planner': typeof PlannerRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRouteWithChildren
-  '/request-access': typeof RequestAccessRoute
   '/settings': typeof SettingsRoute
-  '/setup-admin': typeof SetupAdminRoute
   '/terms': typeof TermsRoute
-  '/demo/': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
   '/planner/routes': typeof PlannerRoutesRoute
   '/projects/$id': typeof ProjectsIdRoute
@@ -183,11 +156,8 @@ export interface FileRouteTypes {
     | '/planner'
     | '/privacy'
     | '/projects'
-    | '/request-access'
     | '/settings'
-    | '/setup-admin'
     | '/terms'
-    | '/demo/'
     | '/customers/$id'
     | '/planner/routes'
     | '/projects/$id'
@@ -202,11 +172,8 @@ export interface FileRouteTypes {
     | '/planner'
     | '/privacy'
     | '/projects'
-    | '/request-access'
     | '/settings'
-    | '/setup-admin'
     | '/terms'
-    | '/demo'
     | '/customers/$id'
     | '/planner/routes'
     | '/projects/$id'
@@ -221,11 +188,8 @@ export interface FileRouteTypes {
     | '/planner'
     | '/privacy'
     | '/projects'
-    | '/request-access'
     | '/settings'
-    | '/setup-admin'
     | '/terms'
-    | '/demo/'
     | '/customers/$id'
     | '/planner/routes'
     | '/projects/$id'
@@ -241,11 +205,8 @@ export interface RootRouteChildren {
   PlannerRoute: typeof PlannerRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ProjectsRoute: typeof ProjectsRouteWithChildren
-  RequestAccessRoute: typeof RequestAccessRoute
   SettingsRoute: typeof SettingsRoute
-  SetupAdminRoute: typeof SetupAdminRoute
   TermsRoute: typeof TermsRoute
-  DemoRoute: typeof DemoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -257,25 +218,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/setup-admin': {
-      id: '/setup-admin'
-      path: '/setup-admin'
-      fullPath: '/setup-admin'
-      preLoaderRoute: typeof SetupAdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/settings': {
       id: '/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/request-access': {
-      id: '/request-access'
-      path: '/request-access'
-      fullPath: '/request-access'
-      preLoaderRoute: typeof RequestAccessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects': {
@@ -362,13 +309,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CustomersIdRouteImport
       parentRoute: typeof CustomersRoute
     }
-    '/demo/': {
-      id: '/demo/'
-      path: '/demo'
-      fullPath: '/demo/'
-      preLoaderRoute: typeof DemoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -417,12 +357,19 @@ const rootRouteChildren: RootRouteChildren = {
   PlannerRoute: PlannerRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ProjectsRoute: ProjectsRouteWithChildren,
-  RequestAccessRoute: RequestAccessRoute,
   SettingsRoute: SettingsRoute,
-  SetupAdminRoute: SetupAdminRoute,
   TermsRoute: TermsRoute,
-  DemoRoute: DemoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
