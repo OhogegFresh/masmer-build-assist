@@ -2,58 +2,579 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/masmer/Logo";
-import { ArrowLeft, Send, Download, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Send,
+  Download,
+  Loader2,
+  FileText,
+  ClipboardList,
+  ShoppingCart,
+  CheckCircle2,
+  ExternalLink,
+  AlertTriangle,
+} from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 export const Route = createFileRoute("/estimate")({
   head: () => ({
     meta: [
-      { title: "AI Estimating Bot — Masmer AI" },
+      { title: "AI Scope of Work Builder — Masmer AI" },
       {
         name: "description",
         content:
-          "Chat with Masmer AI to instantly generate a professional contractor estimate with materials, labor, markup and payment schedule.",
+          "Describe your project and get a full scope of work, private materials list, and crew punchlist instantly.",
       },
     ],
   }),
   component: EstimatePage,
 });
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 type Msg = { role: "user" | "assistant"; content: string };
 
-type Estimate = {
+type MaterialItem = {
+  item: string;
+  qty: number;
+  qty_buffered: number;
+  unit: string;
+  unit_cost: number;
+  total: number;
+  hd_link: string;
+  tbd_note: string;
+};
+
+type MaterialSection = {
+  section_title: string;
+  section_subtitle: string;
+  items: MaterialItem[];
+  section_total: number;
+};
+
+type WorkItem = {
+  code: string;
+  title: string;
+  bullets: string[];
+};
+
+type ScopeSection = {
+  section_label: string;
+  work_items: WorkItem[];
+};
+
+type Project = {
+  customer_name: string;
+  project_address: string;
   project_title: string;
   project_summary: string;
-  square_footage: number;
-  timeline: string;
-  materials: { item: string; qty: number; unit: string; unit_cost: number; total: number }[];
-  labor: { task: string; hours: number; rate: number; total: number }[];
-  materials_subtotal: number;
-  labor_subtotal: number;
-  contractor_markup: number;
-  project_total: number;
+  materials_sections: MaterialSection[];
+  scope_sections: ScopeSection[];
+  punchlist_items: string[];
+  job_specific_disclaimers: string[];
+  materials_grand_total: number;
 };
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const fmt = (n: number) =>
+  n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 });
 
 const INITIAL: Msg = {
   role: "assistant",
   content:
-    "Hi! I'm your Masmer AI estimating assistant. Describe your project and I'll build you a full professional estimate.",
+    "Hi! I'm your Masmer AI project assistant. Tell me about your project — who's the customer, where's the job, and what work needs to be done? I'll generate your full scope of work, private materials list, and crew punchlist.",
 };
 
-const fmt = (n: number) =>
-  n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+// ─── Payment Schedule ─────────────────────────────────────────────────────────
+function calcPayments(total: number, deposit: number) {
+  return {
+    deposit,
+    p1: +(total * 0.5).toFixed(2),
+    p2: +(total * 0.25).toFixed(2),
+    p3: +(total * 0.15).toFixed(2),
+    p4: +(total * 0.1).toFixed(2),
+  };
+}
 
+// ─── PDF Generators ───────────────────────────────────────────────────────────
+
+// NAVY + ORANGE brand colors
+const NAVY = [31, 78, 121] as [number, number, number];
+const ORANGE = [197, 90, 17] as [number, number, number];
+const LIGHT_BLUE = [214, 228, 240] as [number, number, number];
+const WHITE = [255, 255, 255] as [number, number, number];
+const DARK = [26, 26, 26] as [number, number, number];
+const GRAY = [245, 249, 252] as [number, number, number];
+
+function addLetterhead(doc: jsPDF, project: Project, subtitle: string) {
+  // Navy header bar
+  doc.setFillColor(...NAVY);
+  doc.rect(0, 0, 220, 28, "F");
+  // Orange bottom border
+  doc.setFillColor(...ORANGE);
+  doc.rect(0, 28, 220, 2, "F");
+  // Company name
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...WHITE);
+  doc.text("607 THE HOME IMPROVEMENT CCS GROUP", 14, 12);
+  // Subtitle
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(214, 228, 240);
+  doc.text(subtitle, 14, 20);
+  doc.setFontSize(8);
+  doc.text("Licensed  •  Insured  •  Professional", 14, 26);
+
+  // Project info block
+  doc.setFillColor(...GRAY);
+  doc.rect(0, 32, 220, 32, "F");
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...NAVY);
+  doc.text("Customer:", 14, 42);
+  doc.text("Address:", 14, 50);
+  doc.text("Date:", 14, 58);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...DARK);
+  doc.text(project.customer_name, 45, 42);
+  doc.text(project.project_address, 45, 50);
+  doc.text(new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }), 45, 58);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...NAVY);
+  doc.text("Project:", 120, 42);
+  doc.text("Contractor:", 120, 50);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...DARK);
+  doc.text(project.project_title, 148, 42);
+  doc.text("607 The Home Improvement CCS Group", 148, 50);
+
+  return 68; // y position after header
+}
+
+function addSectionHeader(doc: jsPDF, text: string, y: number): number {
+  doc.setFillColor(...NAVY);
+  doc.rect(10, y, 190, 8, "F");
+  doc.setFillColor(...ORANGE);
+  doc.rect(10, y + 8, 190, 1, "F");
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...WHITE);
+  doc.text(text.toUpperCase(), 14, y + 5.5);
+  return y + 14;
+}
+
+function checkPageBreak(doc: jsPDF, y: number, needed: number = 20): number {
+  if (y + needed > 275) {
+    doc.addPage();
+    return 15;
+  }
+  return y;
+}
+
+// ── DOCUMENT 1: Full Scope of Work / Contract ──────────────────────────────
+function generateContractPDF(project: Project, contractTotal: number, deposit: number) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pay = calcPayments(contractTotal, deposit);
+  let y = addLetterhead(doc, project, "SCOPE OF WORK & SERVICE CONTRACT");
+
+  // Total badge
+  doc.setFillColor(...ORANGE);
+  doc.roundedRect(140, 34, 60, 14, 2, 2, "F");
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...WHITE);
+  doc.text("TOTAL CONTRACT", 170, 40, { align: "center" });
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text(fmt(contractTotal), 170, 46, { align: "center" });
+
+  // Scope of Work
+  y = addSectionHeader(doc, "🔧  Scope of Work", y);
+
+  for (const section of project.scope_sections) {
+    y = checkPageBreak(doc, y, 25);
+    // Section label
+    doc.setFillColor(...LIGHT_BLUE);
+    doc.rect(10, y, 190, 7, "F");
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...NAVY);
+    doc.text(section.section_label, 14, y + 5);
+    y += 10;
+
+    for (const wi of section.work_items) {
+      y = checkPageBreak(doc, y, 15);
+      // Work item title
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...NAVY);
+      doc.text(`${wi.code}  |  ${wi.title}`, 14, y);
+      y += 5;
+
+      for (const b of wi.bullets) {
+        y = checkPageBreak(doc, y, 8);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...DARK);
+        doc.text("•", 16, y);
+        const lines = doc.splitTextToSize(b, 174);
+        doc.text(lines, 20, y);
+        y += lines.length * 4.5;
+      }
+      y += 3;
+    }
+    y += 2;
+  }
+
+  // Payment Schedule
+  y = checkPageBreak(doc, y, 60);
+  y = addSectionHeader(doc, "💰  Payment Schedule", y);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(100, 100, 100);
+  doc.text("All payments are due upon reaching the stated milestone unless otherwise agreed in writing.", 14, y);
+  y += 8;
+
+  const payRows = [
+    ["Deposit", "—", fmt(pay.deposit), "Due at contract signing"],
+    ["Payment 1", "50%", fmt(pay.p1), "Due when work begins / mobilization"],
+    ["Payment 2", "25%", fmt(pay.p2), "Due after 60% of work is completed"],
+    ["Payment 3", "15%", fmt(pay.p3), "Due after 90% of work is completed"],
+    ["Final Payment", "10%", fmt(pay.p4), "Due after final walk-through & approval"],
+    ["TOTAL CONTRACT", "100%", fmt(contractTotal), "Labor & Materials — All Inclusive"],
+  ];
+
+  for (const [milestone, pct, amount, when] of payRows) {
+    y = checkPageBreak(doc, y, 8);
+    const isTotal = milestone === "TOTAL CONTRACT";
+    if (isTotal) {
+      doc.setFillColor(...DARK);
+      doc.rect(10, y - 4, 190, 8, "F");
+    }
+    doc.setFontSize(9);
+    doc.setFont("helvetica", isTotal ? "bold" : "normal");
+    doc.setTextColor(isTotal ? 255 : 31, isTotal ? 255 : 78, isTotal ? 255 : 121);
+    doc.text(`•  ${milestone}`, 14, y);
+    doc.setTextColor(isTotal ? 255 : 26, isTotal ? 165 : 26, isTotal ? 0 : 26);
+    doc.text(`${pct}  —  ${amount}`, 80, y);
+    doc.setTextColor(isTotal ? 200 : 100, isTotal ? 200 : 100, isTotal ? 200 : 100);
+    doc.text(when, 130, y);
+    y += 7;
+  }
+  y += 4;
+
+  // General Conditions
+  y = checkPageBreak(doc, y, 30);
+  y = addSectionHeader(doc, "📄  General Conditions", y);
+  const gc = [
+    "All work shall be performed in a professional and workmanlike manner in accordance with industry standards and applicable local building codes.",
+    "607 The Home Improvement CCS Group carries full general liability insurance. Proof of insurance is available upon request.",
+    "Any changes to the scope of work must be agreed upon in writing via a signed Change Order before additional work begins.",
+    "The contractor is not responsible for pre-existing conditions, hidden defects, code violations, or structural issues discovered during the course of work.",
+    "The customer is responsible for clearing and providing access to all work areas prior to the scheduled start date.",
+    "607 The Home Improvement CCS Group will remove all project-related debris upon project completion.",
+    "The contractor reserves the right to substitute materials of equal or greater quality if specified products are unavailable.",
+    "Project timeline is an estimate and subject to change due to material availability, weather, or unforeseen site conditions.",
+    "This contract constitutes the entire agreement between both parties. No verbal agreements are binding.",
+    "All permits required for this scope of work are the responsibility of the contractor unless otherwise noted in writing.",
+    "Final payment authorizes project close-out. Withholding final payment without documented written cause is not permitted.",
+  ];
+  for (const item of gc) {
+    y = checkPageBreak(doc, y, 8);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...DARK);
+    doc.text("•", 14, y);
+    const lines = doc.splitTextToSize(item, 178);
+    doc.text(lines, 18, y);
+    y += lines.length * 4.5;
+  }
+  y += 4;
+
+  // Disclaimer
+  y = checkPageBreak(doc, y, 30);
+  y = addSectionHeader(doc, "⚠️  Disclaimer", y);
+  const stdDisclaimers = [
+    "607 The Home Improvement CCS Group provides labor and installation services as described in this scope of work. This contract does not include services or costs not explicitly listed herein.",
+    "Warranty: All labor performed under this contract is warranted for 1 year from final project completion, covering defects in workmanship only.",
+    "Dispute Resolution: Any disputes shall first be addressed through good-faith negotiation, then mediation before any legal action is taken.",
+    "By signing below, both parties confirm they have read, understood, and agreed to all terms, conditions, and the full scope of work.",
+  ];
+  const allDisclaimers = [...project.job_specific_disclaimers, ...stdDisclaimers];
+  for (const item of allDisclaimers) {
+    y = checkPageBreak(doc, y, 8);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...DARK);
+    doc.text("•", 14, y);
+    const lines = doc.splitTextToSize(item, 178);
+    doc.text(lines, 18, y);
+    y += lines.length * 4.5;
+  }
+  y += 8;
+
+  // Signature Block
+  y = checkPageBreak(doc, y, 35);
+  y = addSectionHeader(doc, "✍️  Authorization & Signatures", y);
+  y += 4;
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...NAVY);
+  doc.text("CUSTOMER SIGNATURE", 14, y);
+  doc.text("CONTRACTOR SIGNATURE", 110, y);
+  y += 12;
+  doc.setDrawColor(...DARK);
+  doc.line(14, y, 95, y);
+  doc.line(110, y, 200, y);
+  y += 5;
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...DARK);
+  doc.setFontSize(8);
+  doc.text(project.customer_name, 14, y);
+  doc.text("607 The Home Improvement CCS Group", 110, y);
+  y += 8;
+  doc.text("Date: _____________________________", 14, y);
+  doc.text("Date: _____________________________", 110, y);
+
+  // Footer
+  doc.setFontSize(7);
+  doc.setTextColor(150, 150, 150);
+  doc.setFont("helvetica", "italic");
+  doc.text(
+    "607 The Home Improvement CCS Group  |  Professional Home Improvement Services",
+    105,
+    285,
+    { align: "center" },
+  );
+
+  doc.save(
+    `${project.customer_name.replace(/\s+/g, "-")}_Contract_607CCS.pdf`,
+  );
+}
+
+// ── DOCUMENT 2: Private Materials List ────────────────────────────────────────
+function generateMaterialsPDF(project: Project) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  let y = addLetterhead(doc, project, "PRIVATE MATERIALS LIST — FOR OFFICE USE ONLY");
+
+  // Confidential banner
+  doc.setFillColor(...DARK);
+  doc.rect(0, y - 4, 220, 8, "F");
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(255, 215, 0);
+  doc.text("⚠️  CONFIDENTIAL — DO NOT SHARE WITH CUSTOMER", 105, y + 1, { align: "center" });
+  y += 10;
+
+  // Note
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(...ORANGE);
+  doc.text(
+    "All quantities include a 15% overage buffer for waste, cuts, and adjustments. Prices sourced from Home Depot.",
+    14,
+    y,
+  );
+  y += 8;
+
+  for (const section of project.materials_sections) {
+    y = checkPageBreak(doc, y, 30);
+    y = addSectionHeader(doc, `🛒  ${section.section_title}`, y);
+
+    // Subtitle
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(80, 80, 80);
+    const subLines = doc.splitTextToSize(section.section_subtitle, 186);
+    doc.text(subLines, 14, y);
+    y += subLines.length * 4 + 2;
+
+    // Table
+    autoTable(doc, {
+      startY: y,
+      margin: { left: 10, right: 10 },
+      head: [["Item Description", "Qty (+15%)", "Unit", "Unit Price", "Total", "Home Depot"]],
+      body: section.items.map((item) => [
+        item.tbd_note ? `${item.item}\n⚠ ${item.tbd_note}` : item.item,
+        String(item.qty_buffered),
+        item.unit,
+        fmt(item.unit_cost),
+        fmt(item.total),
+        item.hd_link,
+      ]),
+      foot: [["Section Subtotal", "", "", "", fmt(section.section_total), ""]],
+      headStyles: {
+        fillColor: NAVY,
+        textColor: WHITE,
+        fontStyle: "bold",
+        fontSize: 7.5,
+      },
+      footStyles: {
+        fillColor: DARK,
+        textColor: WHITE,
+        fontStyle: "bold",
+        fontSize: 8,
+      },
+      bodyStyles: { fontSize: 7.5 },
+      alternateRowStyles: { fillColor: [243, 247, 251] },
+      columnStyles: {
+        0: { cellWidth: 52 },
+        1: { cellWidth: 16, halign: "center" },
+        2: { cellWidth: 12, halign: "center" },
+        3: { cellWidth: 20, halign: "right" },
+        4: { cellWidth: 20, halign: "right", fillColor: LIGHT_BLUE, textColor: NAVY, fontStyle: "bold" },
+        5: { cellWidth: 48, fontSize: 6, textColor: [5, 99, 193] },
+      },
+      didParseCell: (data) => {
+        if (data.cell.raw && String(data.cell.raw).includes("⚠")) {
+          data.cell.styles.textColor = ORANGE as [number, number, number];
+          data.cell.styles.fontStyle = "italic";
+        }
+      },
+    });
+
+    y = (doc as any).lastAutoTable.finalY + 6;
+  }
+
+  // Grand total
+  y = checkPageBreak(doc, y, 16);
+  autoTable(doc, {
+    startY: y,
+    margin: { left: 10, right: 10 },
+    body: [["🧾  ESTIMATED MATERIALS GRAND TOTAL (All Sections + 15% Buffer)", fmt(project.materials_grand_total)]],
+    bodyStyles: {
+      fillColor: DARK,
+      textColor: WHITE,
+      fontStyle: "bold",
+      fontSize: 10,
+    },
+    columnStyles: {
+      0: { cellWidth: 150, halign: "right" },
+      1: { cellWidth: 40, halign: "right", fillColor: ORANGE, textColor: WHITE },
+    },
+  });
+
+  y = (doc as any).lastAutoTable.finalY + 6;
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(...ORANGE);
+  doc.text(
+    "* Add your labor markup and profit margin to arrive at the final customer quote price.",
+    14,
+    y,
+  );
+
+  doc.save(
+    `${project.customer_name.replace(/\s+/g, "-")}_Materials_CONFIDENTIAL_607CCS.pdf`,
+  );
+}
+
+// ── DOCUMENT 3: Quick Crew Punchlist ─────────────────────────────────────────
+function generatePunchlistPDF(project: Project) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+
+  // Simple clean header
+  doc.setFillColor(...NAVY);
+  doc.rect(0, 0, 220, 20, "F");
+  doc.setFillColor(...ORANGE);
+  doc.rect(0, 20, 220, 2, "F");
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...WHITE);
+  doc.text("607 THE HOME IMPROVEMENT CCS GROUP", 105, 10, { align: "center" });
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text("CREW PUNCHLIST", 105, 17, { align: "center" });
+
+  let y = 30;
+
+  // Customer info block
+  doc.setFillColor(...LIGHT_BLUE);
+  doc.rect(10, y, 190, 26, "F");
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...NAVY);
+  doc.text(project.customer_name, 16, y + 9);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...DARK);
+  doc.text(project.project_address, 16, y + 16);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...ORANGE);
+  doc.text(project.project_title, 16, y + 22);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(100, 100, 100);
+  doc.text(
+    `Date: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`,
+    150,
+    y + 9,
+  );
+  y += 34;
+
+  // Divider
+  doc.setFillColor(...ORANGE);
+  doc.rect(10, y, 190, 1.5, "F");
+  y += 8;
+
+  // Punchlist items
+  doc.setFontSize(12);
+  for (const item of project.punchlist_items) {
+    if (y > 265) {
+      doc.addPage();
+      y = 20;
+    }
+    // Checkbox
+    doc.setDrawColor(...NAVY);
+    doc.setLineWidth(0.5);
+    doc.rect(14, y - 4.5, 5, 5);
+    // Text
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...DARK);
+    const lines = doc.splitTextToSize(item, 164);
+    doc.text(lines, 22, y);
+    y += lines.length * 6.5 + 2;
+  }
+
+  // Footer
+  y += 10;
+  if (y < 260) {
+    doc.setFillColor(...GRAY);
+    doc.rect(10, y, 190, 16, "F");
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...NAVY);
+    doc.text("Crew Supervisor Sign-off:", 16, y + 7);
+    doc.setDrawColor(...DARK);
+    doc.line(70, y + 7, 140, y + 7);
+    doc.text("Date:", 148, y + 7);
+    doc.line(158, y + 7, 196, y + 7);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(120, 120, 120);
+    doc.setFontSize(7);
+    doc.text("607 The Home Improvement CCS Group — Internal Use Only", 105, y + 13, { align: "center" });
+  }
+
+  doc.save(
+    `${project.customer_name.replace(/\s+/g, "-")}_Punchlist_607CCS.pdf`,
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 function EstimatePage() {
   const [messages, setMessages] = useState<Msg[]>([INITIAL]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [estimate, setEstimate] = useState<Estimate | null>(null);
+  const [project, setProject] = useState<Project | null>(null);
+  const [contractTotal, setContractTotal] = useState("");
+  const [deposit, setDeposit] = useState("1000");
+  const [priceStep, setPriceStep] = useState(false);
+  const [activeDoc, setActiveDoc] = useState<"contract" | "materials" | "punchlist">("contract");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, loading, estimate]);
+  }, [messages, loading, project]);
 
   const send = async () => {
     const text = input.trim();
@@ -67,21 +588,22 @@ function EstimatePage() {
         body: { messages: next },
       });
       if (error) throw error;
-      if (data?.estimate) {
-        setEstimate(data.estimate);
+      if (data?.project) {
+        setProject(data.project);
+        setPriceStep(true);
         setMessages((m) => [
           ...m,
           {
             role: "assistant",
             content:
               data.content ||
-              "Your estimate is ready below. Review the materials, labor and payment schedule, then download the PDF.",
+              "✅ I've gathered all the project details! Your materials list, scope of work, and punchlist are ready. Review the materials cost below, then enter your total contract price to generate all 3 documents.",
           },
         ]);
       } else {
         setMessages((m) => [
           ...m,
-          { role: "assistant", content: data?.content ?? "Sorry, something went wrong." },
+          { role: "assistant", content: data?.content ?? "Sorry, something went wrong. Please try again." },
         ]);
       }
     } catch (e) {
@@ -95,67 +617,13 @@ function EstimatePage() {
     }
   };
 
-  const payment = estimate
-    ? {
-        deposit: Math.round(estimate.project_total * 0.33),
-        midpoint: Math.round(estimate.project_total * 0.33),
-        final: Math.round(estimate.project_total * 0.34),
-      }
-    : null;
-
-  const downloadPdf = () => {
-    if (!estimate || !payment) return;
-    const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.setTextColor(199, 161, 80);
-    doc.text("Masmer AI — Project Estimate", 14, 18);
-    doc.setFontSize(11);
-    doc.setTextColor(40);
-    doc.text(estimate.project_title, 14, 28);
-    doc.setFontSize(9);
-    doc.text(`${estimate.square_footage} sq ft  ·  ${estimate.timeline}`, 14, 34);
-    const lines = doc.splitTextToSize(estimate.project_summary, 180);
-    doc.text(lines, 14, 42);
-
-    autoTable(doc, {
-      startY: 42 + lines.length * 5 + 4,
-      head: [["Material", "Qty", "Unit", "Unit Cost", "Total"]],
-      body: estimate.materials.map((m) => [m.item, m.qty, m.unit, fmt(m.unit_cost), fmt(m.total)]),
-      headStyles: { fillColor: [199, 161, 80] },
-    });
-
-    autoTable(doc, {
-      head: [["Labor", "Hours", "Rate", "Total"]],
-      body: estimate.labor.map((l) => [l.task, l.hours, fmt(l.rate), fmt(l.total)]),
-      headStyles: { fillColor: [199, 161, 80] },
-    });
-
-    autoTable(doc, {
-      head: [["Summary", "Amount"]],
-      body: [
-        ["Materials Subtotal", fmt(estimate.materials_subtotal)],
-        ["Labor Subtotal", fmt(estimate.labor_subtotal)],
-        ["Contractor Markup (20%)", fmt(estimate.contractor_markup)],
-        ["Project Total", fmt(estimate.project_total)],
-        ["Deposit (33%)", fmt(payment.deposit)],
-        ["Midpoint (33%)", fmt(payment.midpoint)],
-        ["Final (34%)", fmt(payment.final)],
-      ],
-      headStyles: { fillColor: [199, 161, 80] },
-    });
-
-    const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
-    doc.setFontSize(8);
-    doc.setTextColor(90);
-    const disclaimer =
-      "Disclaimer: This estimate is generated by Masmer AI based on user-provided information and standard market pricing. Final pricing subject to site inspection, material availability, and unforeseen conditions. General conditions, permits, taxes, and dump fees may apply. Valid 30 days from issue.";
-    doc.text(doc.splitTextToSize(disclaimer, 180), 14, finalY + 10);
-
-    doc.save(`${estimate.project_title.replace(/\s+/g, "-").toLowerCase()}-estimate.pdf`);
-  };
+  const totalNum = parseFloat(contractTotal.replace(/[^0-9.]/g, "")) || 0;
+  const depositNum = parseFloat(deposit.replace(/[^0-9.]/g, "")) || 0;
+  const pay = totalNum > 0 ? calcPayments(totalNum, depositNum) : null;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/70 border-b border-border">
         <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
           <Logo />
@@ -168,23 +636,55 @@ function EstimatePage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 pt-24 pb-12">
-        <div className="text-center mb-6">
+      <main className="mx-auto max-w-5xl px-4 pt-24 pb-16">
+        {/* Title */}
+        <div className="text-center mb-8">
           <p className="text-gold font-bold uppercase tracking-widest text-xs mb-2">
-            AI Estimating Bot
+            AI Project Builder
           </p>
           <h1 className="text-3xl md:text-4xl font-black tracking-tighter">
-            Build a <span className="text-gradient-gold">Professional Estimate</span>
+            Build Your <span className="text-gradient-gold">Scope of Work</span>
           </h1>
+          <p className="text-muted-foreground mt-2 text-sm max-w-lg mx-auto">
+            Describe the project and I'll generate your contract, materials list, and crew punchlist instantly.
+          </p>
         </div>
 
-        <div className="rounded-2xl border border-gold/30 bg-card shadow-gold overflow-hidden flex flex-col h-[65vh]">
+        {/* Progress Steps */}
+        <div className="flex items-center justify-center gap-2 mb-8 text-xs">
+          {[
+            { label: "1. Describe Project", done: messages.length > 1 },
+            { label: "2. Review Materials", done: !!project },
+            { label: "3. Enter Price", done: totalNum > 0 },
+            { label: "4. Download Docs", done: false },
+          ].map((step, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <div
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1 ${
+                  step.done
+                    ? "bg-gold/20 text-gold border border-gold/40"
+                    : "bg-secondary text-muted-foreground border border-border"
+                }`}
+              >
+                {step.done && <CheckCircle2 className="h-3 w-3" />}
+                {step.label}
+              </div>
+              {i < 3 && <div className="h-px w-4 bg-border" />}
+            </div>
+          ))}
+        </div>
+
+        {/* Chat Window */}
+        <div className="rounded-2xl border border-gold/30 bg-card shadow-gold overflow-hidden flex flex-col h-[55vh] mb-8">
+          <div className="border-b border-border px-5 py-3 bg-secondary/30 flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-gold animate-pulse" />
+            <span className="text-xs font-semibold text-muted-foreground">
+              Masmer AI — Project Assistant
+            </span>
+          </div>
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-4">
             {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-              >
+              <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div
                   className={`max-w-[85%] rounded-xl px-4 py-2.5 text-sm whitespace-pre-wrap ${
                     m.role === "user"
@@ -205,16 +705,13 @@ function EstimatePage() {
             )}
           </div>
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              send();
-            }}
+            onSubmit={(e) => { e.preventDefault(); send(); }}
             className="border-t border-border p-3 flex gap-2 bg-secondary/30"
           >
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your reply…"
+              placeholder={project ? "Ask a follow-up question…" : "Describe your project…"}
               disabled={loading}
               className="flex-1 rounded-md bg-background border border-border px-3 py-2.5 text-sm focus:outline-none focus:border-gold/60"
             />
@@ -228,139 +725,217 @@ function EstimatePage() {
           </form>
         </div>
 
-        {estimate && payment && (
-          <div className="mt-10 rounded-2xl border border-gold/40 bg-card shadow-gold overflow-hidden">
-            <div className="p-6 border-b border-border flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-gold text-xs font-bold uppercase tracking-widest">
-                  Project Estimate
-                </p>
-                <h2 className="text-2xl font-black">{estimate.project_title}</h2>
-                <p className="text-sm text-muted-foreground">
-                  {estimate.square_footage} sq ft · {estimate.timeline}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">Total</p>
-                <p className="text-3xl font-black text-gradient-gold">
-                  {fmt(estimate.project_total)}
-                </p>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-6">
-              <p className="text-sm text-muted-foreground">{estimate.project_summary}</p>
-
-              <section>
-                <h3 className="font-bold mb-2 text-sm uppercase tracking-wider text-gold">
-                  Materials
-                </h3>
-                <div className="rounded-lg border border-border overflow-hidden">
-                  <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-secondary/40 text-xs font-bold uppercase text-muted-foreground">
-                    <span className="col-span-6">Item</span>
-                    <span className="col-span-2">Qty</span>
-                    <span className="col-span-2 text-right">Unit Cost</span>
-                    <span className="col-span-2 text-right">Total</span>
+        {/* Materials Summary (shown after project generated) */}
+        {project && (
+          <div className="space-y-6">
+            {/* Materials Cost Card */}
+            <div className="rounded-2xl border border-gold/30 bg-card shadow-gold overflow-hidden">
+              <div className="p-5 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <ShoppingCart className="h-5 w-5 text-gold" />
+                  <div>
+                    <p className="font-bold">Materials Estimate</p>
+                    <p className="text-xs text-muted-foreground">
+                      Private — office use only • includes 15% buffer
+                    </p>
                   </div>
-                  {estimate.materials.map((m, i) => (
-                    <div
-                      key={i}
-                      className="grid grid-cols-12 gap-2 px-3 py-2 border-t border-border text-sm"
-                    >
-                      <span className="col-span-6 truncate">{m.item}</span>
-                      <span className="col-span-2 text-muted-foreground">
-                        {m.qty} {m.unit}
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">Est. Materials Total</p>
+                  <p className="text-2xl font-black text-gradient-gold">
+                    {fmt(project.materials_grand_total)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Materials sections preview */}
+              <div className="divide-y divide-border">
+                {project.materials_sections.map((sec, si) => (
+                  <div key={si} className="p-4">
+                    <p className="text-xs font-bold text-gold uppercase tracking-wider mb-2">
+                      {sec.section_title}
+                    </p>
+                    <div className="space-y-1">
+                      {sec.items.map((item, ii) => (
+                        <div
+                          key={ii}
+                          className="grid grid-cols-12 gap-2 text-xs py-1 border-b border-border/40 last:border-0"
+                        >
+                          <span className="col-span-5 text-foreground">
+                            {item.item}
+                            {item.tbd_note && (
+                              <span className="ml-1 text-orange-400 flex items-center gap-0.5">
+                                <AlertTriangle className="h-2.5 w-2.5" />
+                                TBD
+                              </span>
+                            )}
+                          </span>
+                          <span className="col-span-2 text-muted-foreground text-center">
+                            {item.qty_buffered} {item.unit}
+                          </span>
+                          <span className="col-span-2 text-right text-muted-foreground">
+                            {fmt(item.unit_cost)}
+                          </span>
+                          <span className="col-span-2 text-right font-semibold text-foreground">
+                            {fmt(item.total)}
+                          </span>
+                          <a
+                            href={item.hd_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="col-span-1 flex items-center justify-end text-blue-400 hover:text-blue-300"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-2 flex justify-end">
+                      <span className="text-xs font-bold text-gold">
+                        Section Total: {fmt(sec.section_total)}
                       </span>
-                      <span className="col-span-2 text-right">{fmt(m.unit_cost)}</span>
-                      <span className="col-span-2 text-right font-semibold">{fmt(m.total)}</span>
                     </div>
-                  ))}
-                </div>
-              </section>
-
-              <section>
-                <h3 className="font-bold mb-2 text-sm uppercase tracking-wider text-gold">
-                  Labor
-                </h3>
-                <div className="rounded-lg border border-border overflow-hidden">
-                  <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-secondary/40 text-xs font-bold uppercase text-muted-foreground">
-                    <span className="col-span-6">Task</span>
-                    <span className="col-span-2">Hours</span>
-                    <span className="col-span-2 text-right">Rate</span>
-                    <span className="col-span-2 text-right">Total</span>
                   </div>
-                  {estimate.labor.map((l, i) => (
-                    <div
-                      key={i}
-                      className="grid grid-cols-12 gap-2 px-3 py-2 border-t border-border text-sm"
-                    >
-                      <span className="col-span-6 truncate">{l.task}</span>
-                      <span className="col-span-2 text-muted-foreground">{l.hours} h</span>
-                      <span className="col-span-2 text-right">{fmt(l.rate)}</span>
-                      <span className="col-span-2 text-right font-semibold">{fmt(l.total)}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              <section className="grid sm:grid-cols-2 gap-3 text-sm">
-                <div className="rounded-lg border border-border p-3 flex justify-between">
-                  <span className="text-muted-foreground">Materials Subtotal</span>
-                  <span className="font-bold">{fmt(estimate.materials_subtotal)}</span>
-                </div>
-                <div className="rounded-lg border border-border p-3 flex justify-between">
-                  <span className="text-muted-foreground">Labor Subtotal</span>
-                  <span className="font-bold">{fmt(estimate.labor_subtotal)}</span>
-                </div>
-                <div className="rounded-lg border border-border p-3 flex justify-between">
-                  <span className="text-muted-foreground">Contractor Markup (20%)</span>
-                  <span className="font-bold">{fmt(estimate.contractor_markup)}</span>
-                </div>
-                <div className="rounded-lg border border-gold/40 p-3 flex justify-between bg-gold/5">
-                  <span className="font-bold">Project Total</span>
-                  <span className="font-black text-gold">{fmt(estimate.project_total)}</span>
-                </div>
-              </section>
-
-              <section>
-                <h3 className="font-bold mb-2 text-sm uppercase tracking-wider text-gold">
-                  Payment Schedule
-                </h3>
-                <div className="grid grid-cols-3 gap-3 text-sm">
-                  <div className="rounded-lg border border-border p-3">
-                    <p className="text-xs text-muted-foreground">Deposit (33%)</p>
-                    <p className="font-bold">{fmt(payment.deposit)}</p>
-                  </div>
-                  <div className="rounded-lg border border-border p-3">
-                    <p className="text-xs text-muted-foreground">Midpoint (33%)</p>
-                    <p className="font-bold">{fmt(payment.midpoint)}</p>
-                  </div>
-                  <div className="rounded-lg border border-border p-3">
-                    <p className="text-xs text-muted-foreground">Final (34%)</p>
-                    <p className="font-bold">{fmt(payment.final)}</p>
-                  </div>
-                </div>
-              </section>
-
-              <section className="text-xs text-muted-foreground italic border-t border-border pt-4">
-                <p className="font-bold not-italic text-foreground mb-1">
-                  Disclaimer & General Conditions
-                </p>
-                This estimate is generated by Masmer AI based on user-provided information and
-                standard market pricing. Final pricing is subject to site inspection, material
-                availability, and unforeseen conditions. General conditions, permits, applicable
-                taxes, dump fees, and change orders may apply and are not included unless stated.
-                Estimate valid for 30 days from issue.
-              </section>
-
-              <button
-                onClick={downloadPdf}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-gradient-gold px-6 py-3.5 text-sm font-bold text-background shadow-gold hover:scale-[1.01] transition-transform"
-              >
-                <Download className="h-4 w-4" />
-                Download PDF Estimate
-              </button>
+                ))}
+              </div>
             </div>
+
+            {/* Price Entry */}
+            {priceStep && (
+              <div className="rounded-2xl border border-gold/40 bg-card shadow-gold p-6">
+                <h3 className="font-bold text-lg mb-1">Enter Your Contract Price</h3>
+                <p className="text-sm text-muted-foreground mb-5">
+                  Materials estimate: <strong className="text-gold">{fmt(project.materials_grand_total)}</strong>.
+                  Add your labor, markup, and profit margin, then enter the total below.
+                </p>
+                <div className="grid sm:grid-cols-2 gap-4 mb-6">
+                  <div>
+                    <label className="block text-xs font-bold text-muted-foreground mb-1.5 uppercase tracking-wider">
+                      Total Contract Price
+                    </label>
+                    <input
+                      type="text"
+                      value={contractTotal}
+                      onChange={(e) => setContractTotal(e.target.value)}
+                      placeholder="e.g. 24,500"
+                      className="w-full rounded-md border border-gold/40 bg-background px-4 py-3 text-lg font-bold focus:outline-none focus:border-gold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-muted-foreground mb-1.5 uppercase tracking-wider">
+                      Deposit Amount
+                    </label>
+                    <input
+                      type="text"
+                      value={deposit}
+                      onChange={(e) => setDeposit(e.target.value)}
+                      placeholder="e.g. 1000"
+                      className="w-full rounded-md border border-border bg-background px-4 py-3 text-lg font-bold focus:outline-none focus:border-gold"
+                    />
+                  </div>
+                </div>
+
+                {/* Payment Schedule Preview */}
+                {pay && (
+                  <div className="mb-6 rounded-xl border border-border bg-secondary/30 p-4">
+                    <p className="text-xs font-bold text-gold uppercase tracking-wider mb-3">
+                      Payment Schedule Preview
+                    </p>
+                    <div className="space-y-2 text-sm">
+                      {[
+                        { label: "Deposit", amount: pay.deposit, when: "At contract signing" },
+                        { label: "Payment 1 (50%)", amount: pay.p1, when: "When work begins" },
+                        { label: "Payment 2 (25%)", amount: pay.p2, when: "After 60% completed" },
+                        { label: "Payment 3 (15%)", amount: pay.p3, when: "After 90% completed" },
+                        { label: "Final (10%)", amount: pay.p4, when: "After walk-through" },
+                      ].map((p, i) => (
+                        <div key={i} className="flex items-center justify-between">
+                          <span className="font-bold text-gold">• {p.label}</span>
+                          <span className="font-bold">{fmt(p.amount)}</span>
+                          <span className="text-muted-foreground text-xs">{p.when}</span>
+                        </div>
+                      ))}
+                      <div className="border-t border-border pt-2 flex items-center justify-between font-black">
+                        <span>Total</span>
+                        <span className="text-gradient-gold">{fmt(totalNum)}</span>
+                        <span className="text-muted-foreground text-xs">Labor & Materials</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Document Download Buttons */}
+                {totalNum > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">
+                      Download Your Documents
+                    </p>
+                    <div className="grid sm:grid-cols-3 gap-3">
+                      <button
+                        onClick={() => generateContractPDF(project, totalNum, depositNum)}
+                        className="flex flex-col items-center gap-2 rounded-xl border border-gold/40 bg-gradient-gold p-4 text-background font-bold hover:scale-[1.02] transition-transform"
+                      >
+                        <FileText className="h-6 w-6" />
+                        <span className="text-sm">Scope of Work</span>
+                        <span className="text-xs font-normal opacity-80">Full Contract PDF</span>
+                      </button>
+                      <button
+                        onClick={() => generateMaterialsPDF(project)}
+                        className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 text-foreground font-bold hover:border-gold/40 transition-colors"
+                      >
+                        <ShoppingCart className="h-6 w-6 text-gold" />
+                        <span className="text-sm">Materials List</span>
+                        <span className="text-xs font-normal text-muted-foreground">
+                          Confidential • Office Only
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => generatePunchlistPDF(project)}
+                        className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 text-foreground font-bold hover:border-gold/40 transition-colors"
+                      >
+                        <ClipboardList className="h-6 w-6 text-gold" />
+                        <span className="text-sm">Crew Punchlist</span>
+                        <span className="text-xs font-normal text-muted-foreground">
+                          Simple field sheet
+                        </span>
+                      </button>
+                    </div>
+
+                    <div className="flex gap-3 mt-2">
+                      <button
+                        onClick={() => {
+                          generateContractPDF(project, totalNum, depositNum);
+                          setTimeout(() => generateMaterialsPDF(project), 500);
+                          setTimeout(() => generatePunchlistPDF(project), 1000);
+                        }}
+                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-md bg-gradient-gold px-6 py-3.5 text-sm font-bold text-background shadow-gold hover:scale-[1.01] transition-transform"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download All 3 Documents
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Punchlist Preview */}
+            {project.punchlist_items.length > 0 && (
+              <div className="rounded-2xl border border-border bg-card p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <ClipboardList className="h-5 w-5 text-gold" />
+                  <p className="font-bold">Quick Crew Punchlist Preview</p>
+                </div>
+                <div className="space-y-2">
+                  {project.punchlist_items.map((item, i) => (
+                    <div key={i} className="flex items-start gap-3 text-sm">
+                      <div className="mt-0.5 h-4 w-4 rounded border border-gold/60 flex-shrink-0" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
