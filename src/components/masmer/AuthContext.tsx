@@ -34,24 +34,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function loadAppUser(email: string | undefined, userId?: string, fullName?: string | null) {
     if (!email) { setAppUser(null); return; }
-    const query = (supabase as any).from("app_users").select("*").ilike("email", email).maybeSingle();
-    const { data } = await query;
-    if (data) {
-      setAppUser(data as AppUser);
-      return;
+    try {
+      const { data } = await (supabase as any).from("app_users").select("*").ilike("email", email).maybeSingle();
+      if (data) { setAppUser(data as AppUser); return; }
+      if (userId) {
+        const { data: created } = await (supabase as any)
+          .from("app_users")
+          .insert({ email, user_id: userId, full_name: fullName ?? null, role: "user", is_active: true })
+          .select("*")
+          .maybeSingle();
+        if (created) { setAppUser(created as AppUser); return; }
+      }
+    } catch (err) {
+      console.warn("loadAppUser failed (non-blocking)", err);
     }
-
-    if (userId) {
-      const { data: created } = await (supabase as any)
-        .from("app_users")
-        .insert({ email, user_id: userId, full_name: fullName ?? null, role: "user", is_active: true })
-        .select("*")
-        .maybeSingle();
-      setAppUser((created as AppUser) ?? null);
-      return;
-    }
-
-    setAppUser(null);
+    // Fallback: synthesize a minimal profile so the app shell can render
+    setAppUser({
+      id: userId ?? "local",
+      user_id: userId ?? null,
+      email,
+      full_name: fullName ?? null,
+      business_name: null,
+      role: "user",
+      is_active: true,
+    });
   }
 
   async function refresh() {

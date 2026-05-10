@@ -8,7 +8,6 @@ import {
   Menu,
   LogOut,
   Settings,
-  ShieldCheck,
   ChevronUp,
   CalendarDays,
 } from "lucide-react";
@@ -29,7 +28,7 @@ export function AppShell({ title, action, children }: { title: string; action?: 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const { appUser, isAdmin, signOut } = useAuth();
+  const { appUser, signOut } = useAuth();
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -81,12 +80,6 @@ export function AppShell({ title, action, children }: { title: string; action?: 
               className="flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-secondary">
               <Settings className="h-4 w-4" /> My Settings
             </Link>
-            {isAdmin && (
-              <Link to="/admin" onClick={() => { setMenuOpen(false); setOpen(false); }}
-                className="flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-secondary">
-                <ShieldCheck className="h-4 w-4" /> Admin Panel
-              </Link>
-            )}
             <div className="h-px bg-border" />
             <button onClick={() => { setMenuOpen(false); signOut(); }}
               className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-secondary text-left">

@@ -35,7 +35,7 @@ function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setLoading(false);
-      return toast.error("Invalid email or password");
+      return toast.error("Password didn't match. Use Forgot password or create a new free account.");
     }
     await refresh();
     toast.success("Welcome back");
