@@ -238,9 +238,13 @@ function PlannerPage() {
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
+      <div className={`grid gap-5 ${view === "month" ? "" : "lg:grid-cols-[2fr_1fr]"}`}>
         {/* Calendar */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden hidden md:block">
+        <div
+          className={`rounded-xl border border-border bg-card overflow-hidden ${
+            view === "month" ? "block" : "hidden md:block"
+          }`}
+        >
           {view === "day" ? (
             <DayCalendar
               jobs={todayJobs}
@@ -273,7 +277,8 @@ function PlannerPage() {
           )}
         </div>
 
-        {/* Today's jobs sidebar */}
+        {/* Today's jobs sidebar — hidden in month view */}
+        {view !== "month" && (
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-start justify-between mb-4">
             <div>
@@ -380,9 +385,11 @@ function PlannerPage() {
             </div>
           )}
         </div>
+        )}
       </div>
 
-      {/* Mobile vertical list */}
+      {/* Mobile vertical list — hidden in month view (month grid renders on all sizes) */}
+      {view !== "month" && (
       <div className="md:hidden mt-5 space-y-3">
         {todayJobs.map((j) => (
           <div key={j.id} className={`rounded-lg border border-border bg-card p-3 border-l-4 ${STATUS_BORDER[j.status]}`}>
@@ -409,6 +416,7 @@ function PlannerPage() {
           </div>
         ))}
       </div>
+      )}
 
       {/* Mobile FAB */}
       <button
@@ -541,12 +549,25 @@ function MonthCalendar({
   const first = new Date(year, month, 1);
   const startWeekday = first.getDay(); // 0=Sun
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const cells: (string | null)[] = [];
-  for (let i = 0; i < startWeekday; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) {
-    cells.push(`${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
+  const iso = (y: number, m: number, d: number) =>
+    `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  const prevMonthDays = new Date(year, month, 0).getDate();
+  const cells: { iso: string; inMonth: boolean }[] = [];
+  for (let i = startWeekday - 1; i >= 0; i--) {
+    const dn = prevMonthDays - i;
+    const py = month === 0 ? year - 1 : year;
+    const pm = month === 0 ? 11 : month - 1;
+    cells.push({ iso: iso(py, pm, dn), inMonth: false });
   }
-  while (cells.length % 7 !== 0) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ iso: iso(year, month, d), inMonth: true });
+  }
+  let nextDay = 1;
+  while (cells.length % 7 !== 0) {
+    const ny = month === 11 ? year + 1 : year;
+    const nm = month === 11 ? 0 : month + 1;
+    cells.push({ iso: iso(ny, nm, nextDay++), inMonth: false });
+  }
 
   const counts = jobs.reduce<Record<string, number>>((acc, j) => {
     acc[j.scheduled_date] = (acc[j.scheduled_date] ?? 0) + 1;
@@ -565,22 +586,23 @@ function MonthCalendar({
         ))}
       </div>
       <div className="grid grid-cols-7">
-        {cells.map((iso, i) => {
-          if (!iso) return <div key={i} className="h-24 border-b border-r border-border bg-background/30" />;
-          const count = counts[iso] ?? 0;
-          const isToday = iso === today;
-          const dayNum = Number(iso.slice(-2));
+        {cells.map((cell, i) => {
+          const count = counts[cell.iso] ?? 0;
+          const isToday = cell.iso === today;
+          const dayNum = Number(cell.iso.slice(-2));
           return (
             <button
-              key={iso}
-              onClick={() => onPickDay(iso)}
-              className={`h-24 border-b border-r border-border last:border-r-0 p-2 text-left hover:bg-secondary transition-colors flex flex-col ${
-                count > 0 ? "bg-orange/5 border-l-2 border-l-orange/50" : ""
-              } ${isToday ? "ring-2 ring-orange ring-inset" : ""}`}
+              key={i}
+              onClick={() => onPickDay(cell.iso)}
+              className={`h-20 md:h-24 border-b border-r border-border p-2 text-left hover:bg-secondary transition-colors flex flex-col ${
+                !cell.inMonth ? "bg-background/30 text-muted-foreground/50" : ""
+              } ${cell.inMonth && count > 0 ? "bg-orange/5 border-l-2 border-l-orange/50" : ""} ${
+                isToday ? "ring-2 ring-orange ring-inset" : ""
+              }`}
             >
               <div className="flex items-center justify-between">
                 <span className={`text-sm font-bold ${isToday ? "text-orange" : ""}`}>{dayNum}</span>
-                {count > 0 && (
+                {cell.inMonth && count > 0 && (
                   <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full bg-orange text-[10px] font-bold text-foreground">
                     {count}
                   </span>
