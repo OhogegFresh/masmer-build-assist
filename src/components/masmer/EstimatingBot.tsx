@@ -161,7 +161,7 @@ export function EstimatingBot() {
         <div className="text-center mt-12">
           <a
             href="#contact"
-            className="group inline-flex items-center gap-2 rounded-md bg-gradient-gold px-7 py-4 text-sm font-bold text-background shadow-gold hover:scale-[1.02] transition-transform"
+            className="group inline-flex items-center gap-2 rounded-md bg-gradient-orange px-7 py-4 text-sm font-bold text-foreground shadow-orange hover:scale-[1.02] transition-transform"
           >
             Try the Estimating Bot Free
             <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />

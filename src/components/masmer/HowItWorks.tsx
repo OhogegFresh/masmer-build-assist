@@ -27,13 +27,17 @@ export function HowItWorks() {
             Up and Running in <span className="text-gradient-gold">48 Hours</span>
           </h2>
         </Reveal>
-        <div className="mt-16 grid gap-6 md:grid-cols-3">
+        <div className="relative mt-16 grid gap-6 md:grid-cols-3">
+          <div
+            aria-hidden
+            className="hidden md:block absolute top-12 left-[16%] right-[16%] border-t-2 border-dashed border-orange/40"
+          />
           {steps.map((s, i) => (
             <Reveal key={s.n} delay={i * 120}>
-              <div className="h-full rounded-xl border border-border bg-card p-8 shadow-card">
-                <p className="text-5xl font-black text-gradient-gold mb-4">
+              <div className="relative h-full rounded-xl border border-border bg-card p-8 shadow-card text-center">
+                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-orange text-foreground text-2xl font-bold shadow-orange ring-4 ring-background">
                   {s.n}
-                </p>
+                </div>
                 <h3 className="text-xl font-bold mb-2">{s.title}</h3>
                 <p className="text-muted-foreground">{s.text}</p>
               </div>
