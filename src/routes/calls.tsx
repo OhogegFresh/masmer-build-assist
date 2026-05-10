@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/masmer/AppShell";
 import { useRequireAuth } from "@/components/masmer/useRequireAuth";
-import { Search, Loader2, Phone, Copy } from "lucide-react";
+import { Search, Loader2, Phone, Copy, ArrowRight, FolderPlus } from "lucide-react";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -12,6 +12,13 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/calls")({
   head: () => ({
@@ -61,6 +68,16 @@ function CallsPage() {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | LeadStatus>("all");
   const [openCall, setOpenCall] = useState<Call | null>(null);
+  const [convertCall, setConvertCall] = useState<Call | null>(null);
+  const [form, setForm] = useState({
+    customer_name: "",
+    customer_address: "",
+    project_title: "",
+    contract_total: "",
+    deposit: "1000",
+  });
+  const [creating, setCreating] = useState(false);
+  const [projectIdByCall, setProjectIdByCall] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!ready) return;
@@ -93,6 +110,55 @@ function CallsPage() {
     } else {
       toast.success(`Marked as ${status}`);
     }
+  }
+
+  function openConvert(c: Call) {
+    setForm({
+      customer_name: c.caller_name ?? "",
+      customer_address: c.job_address ?? "",
+      project_title: c.job_type ? `${c.job_type} Project` : "New Project",
+      contract_total: "",
+      deposit: "1000",
+    });
+    setConvertCall(c);
+  }
+
+  async function createProject() {
+    if (!convertCall) return;
+    if (!form.customer_name.trim() || !form.project_title.trim()) {
+      toast.error("Customer name and project title are required");
+      return;
+    }
+    setCreating(true);
+    const { data, error } = await supabase
+      .from("projects")
+      .insert({
+        customer_name: form.customer_name,
+        customer_address: form.customer_address || null,
+        project_title: form.project_title,
+        contract_total: Number(form.contract_total) || 0,
+        deposit: Number(form.deposit) || 0,
+        status: "new",
+        progress_pct: 0,
+        deposit_paid: false,
+        payment1_paid: false,
+        payment2_paid: false,
+        payment3_paid: false,
+        final_paid: false,
+      })
+      .select("id")
+      .single();
+    if (error || !data) {
+      setCreating(false);
+      toast.error("Failed to create project");
+      return;
+    }
+    await supabase.from("calls").update({ lead_status: "booked" }).eq("id", convertCall.id);
+    setCalls((prev) => prev.map((c) => (c.id === convertCall.id ? { ...c, lead_status: "booked" } : c)));
+    setProjectIdByCall((prev) => ({ ...prev, [convertCall.id]: data.id }));
+    setCreating(false);
+    setConvertCall(null);
+    toast.success("Project created!");
   }
 
   function copyAll(c: Call) {
@@ -229,6 +295,24 @@ function CallsPage() {
                 >
                   View Details
                 </button>
+
+                {projectIdByCall[c.id] ? (
+                  <Link
+                    to="/projects/$id"
+                    params={{ id: projectIdByCall[c.id] }}
+                    className="inline-flex items-center justify-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/40 px-4 py-2 text-sm font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                  >
+                    View Project <ArrowRight className="h-4 w-4" />
+                  </Link>
+                ) : status !== "booked" ? (
+                  <button
+                    onClick={() => openConvert(c)}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-md bg-gradient-orange px-4 py-2 text-sm font-bold text-foreground shadow-orange hover:scale-[1.02] transition-transform"
+                  >
+                    <FolderPlus className="h-4 w-4" />
+                    Convert to Project
+                  </button>
+                ) : null}
               </div>
             );
           })}
@@ -292,6 +376,83 @@ function CallsPage() {
           )}
         </SheetContent>
       </Sheet>
+
+      <Dialog open={!!convertCall} onOpenChange={(o) => !o && !creating && setConvertCall(null)}>
+        <DialogContent className="bg-card border-border sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Create Project from Call</DialogTitle>
+            <DialogDescription>
+              Review and edit the details, then create a project.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-2">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Customer Name</label>
+              <input
+                value={form.customer_name}
+                onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
+                className="mt-1 w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm focus:border-orange focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Customer Address</label>
+              <input
+                value={form.customer_address}
+                onChange={(e) => setForm({ ...form, customer_address: e.target.value })}
+                className="mt-1 w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm focus:border-orange focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Project Title</label>
+              <input
+                value={form.project_title}
+                onChange={(e) => setForm({ ...form, project_title: e.target.value })}
+                className="mt-1 w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm focus:border-orange focus:outline-none"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contract Total ($)</label>
+                <input
+                  type="number"
+                  value={form.contract_total}
+                  onChange={(e) => setForm({ ...form, contract_total: e.target.value })}
+                  placeholder="0"
+                  className="mt-1 w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm focus:border-orange focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Deposit ($)</label>
+                <input
+                  type="number"
+                  value={form.deposit}
+                  onChange={(e) => setForm({ ...form, deposit: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm focus:border-orange focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-6">
+            <button
+              onClick={() => setConvertCall(null)}
+              disabled={creating}
+              className="rounded-md border border-border bg-secondary px-4 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={createProject}
+              disabled={creating}
+              className="inline-flex items-center gap-2 rounded-md bg-gradient-orange px-4 py-2 text-sm font-bold text-foreground shadow-orange hover:scale-[1.02] transition-transform disabled:opacity-60"
+            >
+              {creating && <Loader2 className="h-4 w-4 animate-spin" />}
+              Create Project
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
