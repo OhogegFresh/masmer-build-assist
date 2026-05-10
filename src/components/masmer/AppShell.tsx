@@ -7,6 +7,7 @@ import {
   Calculator,
   Menu,
   LogOut,
+  Settings,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +18,7 @@ const nav = [
   { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/customers", label: "Customers", icon: Users },
   { to: "/estimate", label: "Estimate Builder", icon: Calculator },
+  { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
 export function AppShell({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {

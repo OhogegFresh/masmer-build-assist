@@ -14,6 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
+      calls: {
+        Row: {
+          ai_summary: string | null
+          call_duration: number | null
+          caller_name: string | null
+          caller_phone: string | null
+          created_at: string
+          estimated_budget: string | null
+          id: string
+          job_address: string | null
+          job_type: string | null
+          lead_score: number | null
+          lead_status: string | null
+          transcript: string | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          call_duration?: number | null
+          caller_name?: string | null
+          caller_phone?: string | null
+          created_at?: string
+          estimated_budget?: string | null
+          id?: string
+          job_address?: string | null
+          job_type?: string | null
+          lead_score?: number | null
+          lead_status?: string | null
+          transcript?: string | null
+        }
+        Update: {
+          ai_summary?: string | null
+          call_duration?: number | null
+          caller_name?: string | null
+          caller_phone?: string | null
+          created_at?: string
+          estimated_budget?: string | null
+          id?: string
+          job_address?: string | null
+          job_type?: string | null
+          lead_score?: number | null
+          lead_status?: string | null
+          transcript?: string | null
+        }
+        Relationships: []
+      }
+      company_settings: {
+        Row: {
+          address: string | null
+          company_name: string | null
+          created_at: string
+          default_deposit: number | null
+          default_disclaimer: string | null
+          default_general_conditions: string | null
+          email: string | null
+          id: string
+          license_number: string | null
+          logo_url: string | null
+          notify_call_email: boolean | null
+          notify_lead_whatsapp: boolean | null
+          notify_payment_reminders: boolean | null
+          phone: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          company_name?: string | null
+          created_at?: string
+          default_deposit?: number | null
+          default_disclaimer?: string | null
+          default_general_conditions?: string | null
+          email?: string | null
+          id?: string
+          license_number?: string | null
+          logo_url?: string | null
+          notify_call_email?: boolean | null
+          notify_lead_whatsapp?: boolean | null
+          notify_payment_reminders?: boolean | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          company_name?: string | null
+          created_at?: string
+          default_deposit?: number | null
+          default_disclaimer?: string | null
+          default_general_conditions?: string | null
+          email?: string | null
+          id?: string
+          license_number?: string | null
+          logo_url?: string | null
+          notify_call_email?: boolean | null
+          notify_lead_whatsapp?: boolean | null
+          notify_payment_reminders?: boolean | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address: string | null

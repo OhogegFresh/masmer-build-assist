@@ -3,7 +3,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell, StatusBadge, ProgressBar, fmtUsd } from "@/components/masmer/AppShell";
 import { useRequireAuth } from "@/components/masmer/useRequireAuth";
-import { Plus, FolderKanban, DollarSign, Clock, Sparkles, Loader2 } from "lucide-react";
+import { useDemo } from "@/components/masmer/DemoContext";
+import { VapiCard } from "@/components/masmer/VapiCard";
+import { OnboardingWizard, hasCompletedOnboarding } from "@/components/masmer/OnboardingWizard";
+import { Plus, FolderKanban, DollarSign, Clock, Sparkles, Loader2, PhoneIncoming } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -32,22 +35,107 @@ type Project = {
   created_at: string;
 };
 
+type CallRow = {
+  id: string;
+  caller_name: string | null;
+  caller_phone: string | null;
+  call_duration: number | null;
+  ai_summary: string | null;
+  job_type: string | null;
+  lead_status: string | null;
+  lead_score: number | null;
+  created_at: string;
+};
+
+const SAMPLE_PROJECTS = [
+  {
+    customer_name: "Sarah Johnson",
+    customer_address: "142 Oak Street, Binghamton NY",
+    project_title: "Kitchen & Bathroom Renovation",
+    status: "in_progress",
+    progress_pct: 60,
+    contract_total: 24500,
+    deposit_paid: true,
+    payment1_paid: true,
+  },
+  {
+    customer_name: "Mike Rodriguez",
+    customer_address: "89 Elm Ave, Endicott NY",
+    project_title: "Exterior Siding & Roofing",
+    status: "new",
+    progress_pct: 0,
+    contract_total: 36800,
+    deposit_paid: true,
+  },
+  {
+    customer_name: "The Williams Family",
+    customer_address: "334 Pine Road, Vestal NY",
+    project_title: "Full Interior Renovation",
+    status: "completed",
+    progress_pct: 100,
+    contract_total: 18200,
+    deposit_paid: true,
+    payment1_paid: true,
+    payment2_paid: true,
+    payment3_paid: true,
+    final_paid: true,
+  },
+];
+
+function fmtDuration(sec: number | null) {
+  if (!sec) return "—";
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}m ${s.toString().padStart(2, "0")}s`;
+}
+
 function DashboardPage() {
   const ready = useRequireAuth();
+  const { isDemo, invite } = useDemo();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [calls, setCalls] = useState<CallRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     if (!ready) return;
-    supabase
-      .from("projects")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setProjects((data ?? []) as Project[]);
-        setLoading(false);
-      });
-  }, [ready]);
+    let cancelled = false;
+    (async () => {
+      const { data: projData } = await supabase
+        .from("projects")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (cancelled) return;
+      let projectsList = (projData ?? []) as Project[];
+
+      // Seed sample projects for demo users on first visit
+      if (isDemo && projectsList.length === 0) {
+        const { data: seeded } = await supabase
+          .from("projects")
+          .insert(SAMPLE_PROJECTS as any)
+          .select();
+        if (seeded) projectsList = seeded as Project[];
+      }
+      setProjects(projectsList);
+
+      const { data: callsData } = await (supabase as any)
+        .from("calls")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(3);
+      if (!cancelled) setCalls((callsData ?? []) as CallRow[]);
+
+      setLoading(false);
+
+      // Show onboarding wizard once for demo users
+      if (isDemo && !hasCompletedOnboarding()) {
+        setShowOnboarding(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, isDemo]);
 
   if (!ready) return null;
 
@@ -87,6 +175,13 @@ function DashboardPage() {
         </Link>
       }
     >
+      {showOnboarding && (
+        <OnboardingWizard
+          inviteeName={invite?.invitee_name ?? "there"}
+          onClose={() => setShowOnboarding(false)}
+        />
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
         {stats.map((s) => (
           <div key={s.label} className="rounded-xl border border-border bg-card p-5 shadow-card">
@@ -100,6 +195,48 @@ function DashboardPage() {
           </div>
         ))}
       </div>
+
+      <div className="mb-6">
+        <VapiCard />
+      </div>
+
+      {calls.length > 0 && (
+        <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden mb-6">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+            <h2 className="font-display text-lg font-bold flex items-center gap-2">
+              <PhoneIncoming className="h-4 w-4 text-orange" />
+              Recent AI Calls
+            </h2>
+            <span className="text-xs text-muted-foreground">Last {calls.length}</span>
+          </div>
+          <div className="divide-y divide-border">
+            {calls.map((c) => (
+              <div key={c.id} className="px-5 py-4">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
+                    <div className="font-semibold">{c.caller_name ?? "Unknown caller"}</div>
+                    <div className="text-xs text-muted-foreground font-mono">{c.caller_phone}</div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {c.job_type && (
+                      <span className="rounded-full border border-orange/40 text-orange px-2 py-0.5 text-xs">{c.job_type}</span>
+                    )}
+                    {c.lead_status === "booked" ? (
+                      <span className="rounded-full bg-green-500/15 text-green-400 border border-green-500/40 px-2 py-0.5 text-xs font-semibold">Booked</span>
+                    ) : (
+                      <span className="rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/40 px-2 py-0.5 text-xs font-semibold">{c.lead_status ?? "new"}</span>
+                    )}
+                    <span className="text-xs text-muted-foreground">{fmtDuration(c.call_duration)}</span>
+                  </div>
+                </div>
+                {c.ai_summary && (
+                  <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{c.ai_summary}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
