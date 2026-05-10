@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell, StatusBadge, ProgressBar, fmtUsd } from "@/components/masmer/AppShell";
 import { useRequireAuth } from "@/components/masmer/useRequireAuth";
-import { useDemo } from "@/components/masmer/DemoContext";
 import { VapiCard } from "@/components/masmer/VapiCard";
 import { OnboardingWizard, hasCompletedOnboarding } from "@/components/masmer/OnboardingWizard";
 import { Plus, FolderKanban, DollarSign, Clock, Sparkles, Loader2, PhoneIncoming, Copy, Check } from "lucide-react";
@@ -98,7 +97,7 @@ function fmtDuration(sec: number | null) {
 
 function DashboardPage() {
   const ready = useRequireAuth();
-  const { isDemo, invite } = useDemo();
+  const isDemo = false;
   const [projects, setProjects] = useState<Project[]>([]);
   const [calls, setCalls] = useState<CallRow[]>([]);
   const [loading, setLoading] = useState(true);
