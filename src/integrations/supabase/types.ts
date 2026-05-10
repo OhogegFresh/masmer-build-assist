@@ -102,6 +102,7 @@ export type Database = {
           caller_name: string | null
           caller_phone: string | null
           created_at: string
+          customer_id: string | null
           estimated_budget: string | null
           id: string
           job_address: string | null
@@ -116,6 +117,7 @@ export type Database = {
           caller_name?: string | null
           caller_phone?: string | null
           created_at?: string
+          customer_id?: string | null
           estimated_budget?: string | null
           id?: string
           job_address?: string | null
@@ -130,6 +132,7 @@ export type Database = {
           caller_name?: string | null
           caller_phone?: string | null
           created_at?: string
+          customer_id?: string | null
           estimated_budget?: string | null
           id?: string
           job_address?: string | null
@@ -138,7 +141,15 @@ export type Database = {
           lead_status?: string | null
           transcript?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "calls_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_settings: {
         Row: {
@@ -389,12 +400,21 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scheduled_jobs: {
         Row: {
           assigned_to: string | null
           created_at: string
+          customer_id: string | null
           customer_name: string
           duration_minutes: number
           id: string
@@ -409,6 +429,7 @@ export type Database = {
         Insert: {
           assigned_to?: string | null
           created_at?: string
+          customer_id?: string | null
           customer_name: string
           duration_minutes?: number
           id?: string
@@ -423,6 +444,7 @@ export type Database = {
         Update: {
           assigned_to?: string | null
           created_at?: string
+          customer_id?: string | null
           customer_name?: string
           duration_minutes?: number
           id?: string
@@ -435,6 +457,13 @@ export type Database = {
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "scheduled_jobs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "scheduled_jobs_project_id_fkey"
             columns: ["project_id"]
