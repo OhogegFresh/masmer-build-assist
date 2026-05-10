@@ -5,6 +5,7 @@ import { AppShell } from "@/components/masmer/AppShell";
 import { useRequireAuth } from "@/components/masmer/useRequireAuth";
 import { Search, Plus, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
+import { CustomerLeadPipe } from "@/components/masmer/CustomerLeadPipe";
 
 export const Route = createFileRoute("/customers")({
   head: () => ({
@@ -26,6 +27,7 @@ function CustomersPage() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [pipeCustomer, setPipeCustomer] = useState<Customer | null>(null);
 
   async function load() {
     const [{ data: c }, { data: p }] = await Promise.all([
@@ -135,7 +137,15 @@ function CustomersPage() {
                       <td className="px-5 py-4 text-center"><span className="rounded-full border border-orange/40 text-orange px-2 py-0.5 text-xs">{list.length}</span></td>
                       <td className="px-5 py-4 text-muted-foreground">{last ? last.toLocaleDateString() : "—"}</td>
                       <td className="px-5 py-4 text-right">
-                        <Link to="/customers/$id" params={{ id: c.id }} className="text-orange hover:text-orange/80 text-sm font-semibold">View</Link>
+                        <div className="flex items-center justify-end gap-3">
+                          <button
+                            onClick={() => setPipeCustomer(c)}
+                            className="text-orange hover:text-orange/80 text-sm font-semibold"
+                          >
+                            Pipe
+                          </button>
+                          <Link to="/customers/$id" params={{ id: c.id }} className="text-orange hover:text-orange/80 text-sm font-semibold">View</Link>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -166,6 +176,14 @@ function CustomersPage() {
           </div>
         </div>
       )}
+
+      <CustomerLeadPipe
+        open={!!pipeCustomer}
+        onClose={() => setPipeCustomer(null)}
+        customerName={pipeCustomer?.name ?? ""}
+        phone={pipeCustomer?.phone ?? null}
+        address={pipeCustomer?.address ?? null}
+      />
     </AppShell>
   );
 }

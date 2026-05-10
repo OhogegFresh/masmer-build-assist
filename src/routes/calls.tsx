@@ -5,6 +5,7 @@ import { AppShell } from "@/components/masmer/AppShell";
 import { useRequireAuth } from "@/components/masmer/useRequireAuth";
 import { Search, Loader2, Phone, Copy, ArrowRight, FolderPlus } from "lucide-react";
 import { toast } from "sonner";
+import { CustomerLeadPipe } from "@/components/masmer/CustomerLeadPipe";
 import {
   Sheet,
   SheetContent,
@@ -68,6 +69,7 @@ function CallsPage() {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | LeadStatus>("all");
   const [openCall, setOpenCall] = useState<Call | null>(null);
+  const [pipeCall, setPipeCall] = useState<Call | null>(null);
   const [convertCall, setConvertCall] = useState<Call | null>(null);
   const [form, setForm] = useState({
     customer_name: "",
@@ -290,7 +292,7 @@ function CallsPage() {
                 </div>
 
                 <button
-                  onClick={() => setOpenCall(c)}
+                  onClick={() => setPipeCall(c)}
                   className="mt-auto inline-flex items-center justify-center rounded-md border border-orange/60 px-4 py-2 text-sm font-bold text-orange hover:bg-orange/10 transition-colors"
                 >
                   View Details
@@ -376,6 +378,14 @@ function CallsPage() {
           )}
         </SheetContent>
       </Sheet>
+
+      <CustomerLeadPipe
+        open={!!pipeCall}
+        onClose={() => setPipeCall(null)}
+        customerName={pipeCall?.caller_name ?? "Unknown"}
+        phone={pipeCall?.caller_phone ?? null}
+        address={pipeCall?.job_address ?? null}
+      />
 
       <Dialog open={!!convertCall} onOpenChange={(o) => !o && !creating && setConvertCall(null)}>
         <DialogContent className="bg-card border-border sm:max-w-lg">
