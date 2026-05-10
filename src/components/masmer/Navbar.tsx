@@ -26,6 +26,12 @@ export function Navbar() {
         </nav>
         <div className="flex items-center gap-3">
           <Link
+            to="/estimate"
+            className="hidden sm:inline text-sm font-semibold text-gold hover:text-gold/80 transition-colors"
+          >
+            Try Estimating Bot
+          </Link>
+          <Link
             to="/login"
             className="hidden sm:inline text-sm text-muted-foreground hover:text-gold transition-colors"
           >
