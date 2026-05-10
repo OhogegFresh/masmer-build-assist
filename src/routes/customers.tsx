@@ -73,11 +73,11 @@ function CustomersPage() {
       notes: String(fd.get("notes") ?? "").trim() || null,
     };
     if (!payload.name) return toast.error("Name required");
-    const { error } = await supabase.from("customers").insert(payload);
+    const { data, error } = await supabase.from("customers").insert(payload).select().single();
     if (error) return toast.error(error.message);
-    toast.success("Customer added");
+    if (data) setCustomers((prev) => [data as Customer, ...prev]);
+    toast.success("Customer added.");
     setShowModal(false);
-    load();
   }
 
   if (!ready) return null;
@@ -130,7 +130,14 @@ function CustomersPage() {
                   const last = list.length > 0 ? new Date(Math.max(...list.map((p) => +new Date(p.created_at)))) : null;
                   return (
                     <tr key={c.id} className="border-t border-border hover:bg-secondary/50">
-                      <td className="px-5 py-4 font-medium">{c.name}</td>
+                      <td className="px-5 py-4">
+                        <div className="font-medium">{c.name}</div>
+                        {(c.phone || c.email) && (
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {[c.phone, c.email].filter(Boolean).join(" · ")}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-5 py-4 text-muted-foreground">{c.address ?? "—"}</td>
                       <td className="px-5 py-4 text-muted-foreground">{c.phone ?? "—"}</td>
                       <td className="px-5 py-4 text-muted-foreground">{c.email ?? "—"}</td>
