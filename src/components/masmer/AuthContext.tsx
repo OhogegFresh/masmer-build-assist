@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function loadAppUser(email: string | undefined, userId?: string, fullName?: string | null) {
     if (!email) { setAppUser(null); return; }
-    const query = (supabase as any).from("app_users").select("*").eq("email", email).maybeSingle();
+    const query = (supabase as any).from("app_users").select("*").ilike("email", email).maybeSingle();
     const { data } = await query;
     if (data) {
       setAppUser(data as AppUser);
