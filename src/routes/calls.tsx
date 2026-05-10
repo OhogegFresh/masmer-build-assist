@@ -295,6 +295,24 @@ function CallsPage() {
                 >
                   View Details
                 </button>
+
+                {projectIdByCall[c.id] ? (
+                  <Link
+                    to="/projects/$id"
+                    params={{ id: projectIdByCall[c.id] }}
+                    className="inline-flex items-center justify-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/40 px-4 py-2 text-sm font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                  >
+                    View Project <ArrowRight className="h-4 w-4" />
+                  </Link>
+                ) : status !== "booked" ? (
+                  <button
+                    onClick={() => openConvert(c)}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-md bg-gradient-orange px-4 py-2 text-sm font-bold text-foreground shadow-orange hover:scale-[1.02] transition-transform"
+                  >
+                    <FolderPlus className="h-4 w-4" />
+                    Convert to Project
+                  </button>
+                ) : null}
               </div>
             );
           })}
