@@ -1,7 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
-@import url("https://api.fontshare.com/v2/css?f[]=clash-display@700,600,500&display=swap");
+@import url("https://api.fontshare.com/v2/css?f[]=clash-display@700,600,500&f[]=satoshi@700,500,400&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -63,57 +63,94 @@
 }
 
 :root {
-  --radius: 0.5rem;
-  /* Masmer AI: deep navy + burnt orange + gold */
-  --background: oklch(0.14 0.03 265);
-  --foreground: oklch(0.98 0.005 247);
-  --card: oklch(0.22 0.04 265);
-  --card-foreground: oklch(0.98 0.005 247);
-  --popover: oklch(0.19 0.035 264);
-  --popover-foreground: oklch(0.98 0.005 247);
-  --primary: oklch(0.6 0.17 45);
-  --primary-foreground: oklch(0.98 0.005 247);
-  --secondary: oklch(0.19 0.035 264);
-  --secondary-foreground: oklch(0.98 0.005 247);
-  --muted: oklch(0.22 0.04 265);
-  --muted-foreground: oklch(0.7 0.03 248);
-  --accent: oklch(0.6 0.17 45);
-  --accent-foreground: oklch(0.98 0.005 247);
-  --destructive: oklch(0.6 0.22 27);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.42 0.09 247 / 30%);
-  --input: oklch(0.42 0.09 247 / 35%);
-  --ring: oklch(0.6 0.17 45);
-  --navy: oklch(0.42 0.09 247);
-  --navy-deep: oklch(0.14 0.03 265);
-  --orange: oklch(0.6 0.17 45);
-  --orange-bright: oklch(0.7 0.17 45);
-  --orange-dim: oklch(0.5 0.15 45);
-  --gold: oklch(0.76 0.13 85);
-  --gold-bright: oklch(0.84 0.14 85);
-  --gold-dim: oklch(0.55 0.1 85);
-  --gradient-gold: linear-gradient(135deg, oklch(0.84 0.14 85), oklch(0.62 0.12 75));
-  --gradient-orange: linear-gradient(135deg, oklch(0.7 0.17 45), oklch(0.5 0.15 40));
-  --gradient-navy: linear-gradient(135deg, oklch(0.42 0.09 247), oklch(0.22 0.05 260));
-  --gradient-dark: linear-gradient(180deg, oklch(0.14 0.03 265), oklch(0.1 0.02 265));
-  --shadow-gold: 0 10px 40px -10px oklch(0.76 0.13 85 / 0.45);
-  --shadow-orange: 0 10px 40px -10px oklch(0.6 0.17 45 / 0.55);
-  --shadow-card: 0 8px 30px -12px oklch(0 0 0 / 0.7);
-  --blueprint: oklch(0.42 0.09 247 / 0.08);
-  --font-display: "Clash Display", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, sans-serif;
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
+  --radius: 0.75rem;
+
+  /* Surfaces */
+  --bg-base: #080C14;
+  --bg-surface: #0F1623;
+  --bg-elevated: #161E2E;
+  --bg-overlay: #1C2538;
+
+  /* Brand */
+  --orange: #E05C1A;
+  --orange-hover: #F06A25;
+  --orange-muted: rgba(224, 92, 26, 0.10);
+  --orange-bright: #F06A25;
+  --orange-dim: #B8481A;
+  --navy: #1B3A6B;
+  --navy-deep: #0F1F3D;
+  --navy-light: #2A5298;
+  --gold: #E5A752;
+  --gold-bright: #F2BC6E;
+  --gold-dim: #B88438;
+
+  /* Text */
+  --text-primary: #F0F4FF;
+  --text-secondary: #8892A4;
+  --text-tertiary: #4A5568;
+  --text-orange: #E05C1A;
+
+  /* Status */
+  --green: #10B981;
+  --green-muted: rgba(16, 185, 129, 0.12);
+  --blue: #3B82F6;
+  --blue-muted: rgba(59, 130, 246, 0.12);
+  --yellow: #F59E0B;
+  --yellow-muted: rgba(245, 158, 11, 0.12);
+  --red: #EF4444;
+  --red-muted: rgba(239, 68, 68, 0.12);
+
+  /* Semantic shadcn tokens */
+  --background: var(--bg-base);
+  --foreground: var(--text-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-overlay);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--orange);
+  --primary-foreground: #FFFFFF;
+  --secondary: var(--bg-elevated);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-elevated);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--bg-elevated);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--red);
+  --destructive-foreground: #FFFFFF;
+  --border: #1E2A3E;
+  --border-hover: #2D3F5A;
+  --input: var(--bg-elevated);
+  --ring: var(--orange);
+
+  /* Effects */
+  --gradient-gold: linear-gradient(135deg, #F2BC6E, #B88438);
+  --gradient-orange: linear-gradient(135deg, #F06A25, #B8481A);
+  --gradient-navy: linear-gradient(135deg, #2A5298, #0F1F3D);
+  --gradient-dark: linear-gradient(180deg, #080C14, #050810);
+  --shadow-gold: 0 0 24px rgba(229, 167, 82, 0.25);
+  --shadow-orange: 0 0 24px rgba(224, 92, 26, 0.30);
+  --shadow-card: 0 1px 0 0 rgba(255, 255, 255, 0.02) inset;
+  --blueprint: rgba(43, 82, 152, 0.08);
+
+  /* Typography */
+  --font-display: "Clash Display", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Satoshi", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, sans-serif;
+
+  --chart-1: #E05C1A;
+  --chart-2: #3B82F6;
+  --chart-3: #10B981;
+  --chart-4: #F59E0B;
+  --chart-5: #8892A4;
+
+  /* Sidebar (Spotify-inspired) */
+  --sidebar: var(--bg-surface);
+  --sidebar-foreground: var(--text-secondary);
+  --sidebar-primary: var(--orange);
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: var(--orange-muted);
+  --sidebar-accent-foreground: var(--text-primary);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--orange);
 }
 
 .dark {
@@ -159,16 +196,27 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, sans-serif;
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-size: 15px;
     -webkit-font-smoothing: antialiased;
   }
 
   html { scroll-behavior: smooth; }
 
-  h1, h2, h3, h4 {
+  h1, h2, h3 {
     font-family: var(--font-display);
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: -0.02em;
+  }
+  h4, h5, h6 {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  input, button, select, textarea {
+    font-family: var(--font-sans);
+    font-weight: 500;
   }
 }
 
