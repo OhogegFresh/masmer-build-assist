@@ -23,6 +23,8 @@ type Row = {
   contractor_type: string;
   feature_interest: string;
   created_at: string;
+  demo_access: boolean | null;
+  demo_expires_at: string | null;
 };
 
 function AdminPage() {
@@ -35,6 +37,7 @@ function AdminPage() {
   const [search, setSearch] = useState("");
   const [contractorType, setContractorType] = useState("");
   const [feature, setFeature] = useState("");
+  const [extending, setExtending] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -109,6 +112,32 @@ function AdminPage() {
   async function signOut() {
     await supabase.auth.signOut();
     navigate({ to: "/login" });
+  }
+
+  async function extendAccess(row: Row) {
+    setExtending(row.id);
+    const base =
+      row.demo_expires_at && new Date(row.demo_expires_at) > new Date()
+        ? new Date(row.demo_expires_at)
+        : new Date();
+    const next = new Date(base.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const { error } = await supabase
+      .from("waitlist_signups")
+      .update({ demo_expires_at: next.toISOString(), demo_access: true })
+      .eq("id", row.id);
+    setExtending(null);
+    if (error) {
+      toast.error("Failed to extend access");
+      return;
+    }
+    setRows((rs) =>
+      rs.map((r) =>
+        r.id === row.id
+          ? { ...r, demo_expires_at: next.toISOString(), demo_access: true }
+          : r,
+      ),
+    );
+    toast.success("Extended 7 more days");
   }
 
   if (!authChecked) {
@@ -202,18 +231,26 @@ function AdminPage() {
                       <th className="text-left px-4 py-3">Type</th>
                       <th className="text-left px-4 py-3">Interest</th>
                       <th className="text-left px-4 py-3">Submitted</th>
+                      <th className="text-left px-4 py-3">Demo Access</th>
+                      <th className="text-left px-4 py-3">Expires</th>
+                      <th className="text-left px-4 py-3"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
+                      <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">
                         <Loader2 className="inline h-5 w-5 animate-spin text-orange" />
                       </td></tr>
                     ) : filtered.length === 0 ? (
-                      <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
+                      <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">
                         No signups match these filters.
                       </td></tr>
-                    ) : filtered.map((r) => (
+                    ) : filtered.map((r) => {
+                      const expired =
+                        !r.demo_access ||
+                        !r.demo_expires_at ||
+                        new Date(r.demo_expires_at) < new Date();
+                      return (
                       <tr key={r.id} className="border-t border-border hover:bg-secondary/20">
                         <td className="px-4 py-3 font-medium">{r.full_name}</td>
                         <td className="px-4 py-3">{r.business_name}</td>
@@ -224,8 +261,29 @@ function AdminPage() {
                         <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                           {new Date(r.created_at).toLocaleString()}
                         </td>
+                        <td className="px-4 py-3">
+                          {expired ? (
+                            <span className="rounded-full bg-destructive/15 text-destructive border border-destructive/40 px-2 py-0.5 text-xs font-semibold">Expired</span>
+                          ) : (
+                            <span className="rounded-full bg-green-500/15 text-green-400 border border-green-500/40 px-2 py-0.5 text-xs font-semibold">Active</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                          {r.demo_expires_at ? new Date(r.demo_expires_at).toLocaleDateString() : "—"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => extendAccess(r)}
+                            disabled={extending === r.id}
+                            className="inline-flex items-center gap-1 rounded-md border border-orange/40 text-orange hover:bg-orange/10 px-2 py-1 text-xs font-semibold disabled:opacity-50"
+                          >
+                            {extending === r.id && <Loader2 className="h-3 w-3 animate-spin" />}
+                            +7 days
+                          </button>
+                        </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
