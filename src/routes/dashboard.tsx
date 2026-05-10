@@ -96,8 +96,23 @@ function DashboardPage() {
 
       setLoading(false);
     })();
+
+    const channel = supabase
+      .channel("calls-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "calls" },
+        (payload) => {
+          const newCall = payload.new as CallRow;
+          setCalls((prev) => [newCall, ...prev].slice(0, 3));
+          toast("📞 New call received");
+        }
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
+      supabase.removeChannel(channel);
     };
   }, [ready]);
 
