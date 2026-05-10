@@ -7,6 +7,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Reveal } from "./Reveal";
+import { Link } from "@tanstack/react-router";
 
 const steps = [
   {
