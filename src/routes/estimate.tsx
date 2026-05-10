@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/masmer/Logo";
@@ -16,7 +16,10 @@ import {
   Home,
   TreePine,
   Hammer,
+  Loader2,
+  Save,
 } from "lucide-react";
+import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -732,6 +735,9 @@ function EstimatePage() {
   const estimateRef = useRef<HTMLDivElement>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const [pulseDownloads, setPulseDownloads] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -1104,6 +1110,82 @@ function EstimatePage() {
                         <Download className="h-4 w-4" />
                         Download All 3 Documents
                       </button>
+                    </div>
+
+                    <div className="mt-2">
+                      <button
+                        disabled={saving || saved}
+                        onClick={async () => {
+                          if (saving || saved) return;
+                          setSaving(true);
+                          const scopeText = project.scope_sections
+                            .map((s) =>
+                              `${s.section_label}\n` +
+                                s.work_items
+                                  .map((w) =>
+                                    `  ${w.code ? `[${w.code}] ` : ""}${w.title}` +
+                                    (w.bullets?.length ? `\n` + w.bullets.map((b) => `    - ${b}`).join("\n") : "")
+                                  )
+                                  .join("\n")
+                            )
+                            .join("\n\n");
+                          const { data, error } = await supabase
+                            .from("projects")
+                            .insert({
+                              customer_name: project.customer_name,
+                              customer_address: project.project_address,
+                              project_title: project.project_title,
+                              contract_total: totalNum,
+                              deposit: depositNum,
+                              status: "new",
+                              progress_pct: 0,
+                              deposit_paid: false,
+                              payment1_paid: false,
+                              payment2_paid: false,
+                              payment3_paid: false,
+                              final_paid: false,
+                              punchlist_items: project.punchlist_items,
+                              scope_of_work: scopeText,
+                            })
+                            .select("id")
+                            .single();
+                          setSaving(false);
+                          if (error || !data) {
+                            toast.error("Failed to save project");
+                            return;
+                          }
+                          setSaved(true);
+                          toast.success("Saved to Projects CRM");
+                          setTimeout(() => {
+                            navigate({ to: "/projects/$id", params: { id: data.id } });
+                          }, 700);
+                        }}
+                        className={`w-full inline-flex items-center justify-center gap-2 rounded-md border bg-card px-6 py-3.5 text-sm font-bold transition-colors ${
+                          saved
+                            ? "border-green-500/60 text-green-500"
+                            : "border-orange/60 text-orange hover:bg-orange/10"
+                        }`}
+                      >
+                        {saving ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : saved ? (
+                          <>
+                            <Check className="h-4 w-4" />
+                            Saved!
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4" />
+                            Save to Projects CRM
+                          </>
+                        )}
+                      </button>
+                      <p className="mt-2 text-xs text-center text-muted-foreground">
+                        Saves customer, scope, punchlist & payment schedule to your dashboard.
+                      </p>
                     </div>
                   </div>
                 )}
