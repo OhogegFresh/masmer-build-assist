@@ -130,7 +130,14 @@ function CustomersPage() {
                   const last = list.length > 0 ? new Date(Math.max(...list.map((p) => +new Date(p.created_at)))) : null;
                   return (
                     <tr key={c.id} className="border-t border-border hover:bg-secondary/50">
-                      <td className="px-5 py-4 font-medium">{c.name}</td>
+                      <td className="px-5 py-4">
+                        <div className="font-medium">{c.name}</div>
+                        {(c.phone || c.email) && (
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {[c.phone, c.email].filter(Boolean).join(" · ")}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-5 py-4 text-muted-foreground">{c.address ?? "—"}</td>
                       <td className="px-5 py-4 text-muted-foreground">{c.phone ?? "—"}</td>
                       <td className="px-5 py-4 text-muted-foreground">{c.email ?? "—"}</td>
