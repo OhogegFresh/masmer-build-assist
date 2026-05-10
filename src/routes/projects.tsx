@@ -62,9 +62,10 @@ function ProjectsPage() {
     });
   }, [projects, q, status]);
 
-  async function toggle(id: string, key: string, val: boolean) {
+  type MilestoneKey = (typeof milestones)[number]["key"];
+  async function toggle(id: string, key: MilestoneKey, val: boolean) {
     setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, [key]: val } : p)));
-    const { error } = await supabase.from("projects").update({ [key]: val }).eq("id", id);
+    const { error } = await supabase.from("projects").update({ [key]: val } as Record<MilestoneKey, boolean>).eq("id", id);
     if (error) toast.error("Failed to save");
   }
 
