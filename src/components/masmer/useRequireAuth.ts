@@ -10,8 +10,7 @@ export function useRequireAuth(opts: { adminOnly?: boolean } = {}) {
   useEffect(() => {
     if (authLoading) return;
     if (!session) { navigate({ to: "/login" }); return; }
-    if (!appUser) { navigate({ to: "/login" }); return; }
-    if (!appUser.is_active) { navigate({ to: "/login", search: { suspended: "1" } as any }); return; }
+    if (appUser && !appUser.is_active) { navigate({ to: "/login", search: { suspended: "1" } as any }); return; }
     if (opts.adminOnly && !isAdmin) { navigate({ to: "/dashboard" }); return; }
     setReady(true);
   }, [navigate, authLoading, session, appUser, isAdmin, opts.adminOnly]);
