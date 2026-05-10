@@ -10,6 +10,7 @@ import {
   Settings,
   ShieldCheck,
   ChevronUp,
+  CalendarDays,
 } from "lucide-react";
 import { useState, useRef, useEffect, type ReactNode } from "react";
 import { useAuth } from "./AuthContext";
@@ -18,6 +19,7 @@ const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/customers", label: "Customers", icon: Users },
+  { to: "/planner", label: "Day Planner", icon: CalendarDays },
   { to: "/estimate", label: "Estimate Builder", icon: Calculator },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;

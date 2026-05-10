@@ -14,6 +14,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RequestAccessRouteImport } from './routes/request-access'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as EstimateRouteImport } from './routes/estimate'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -21,6 +22,7 @@ import { Route as CustomersRouteImport } from './routes/customers'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
+import { Route as PlannerRoutesRouteImport } from './routes/planner.routes'
 import { Route as CustomersIdRouteImport } from './routes/customers.$id'
 import { Route as DemoRouteImport } from './routes/demo.'
 
@@ -47,6 +49,11 @@ const ProjectsRoute = ProjectsRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlannerRoute = PlannerRouteImport.update({
+  id: '/planner',
+  path: '/planner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -84,6 +91,11 @@ const ProjectsIdRoute = ProjectsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ProjectsRoute,
 } as any)
+const PlannerRoutesRoute = PlannerRoutesRouteImport.update({
+  id: '/routes',
+  path: '/routes',
+  getParentRoute: () => PlannerRoute,
+} as any)
 const CustomersIdRoute = CustomersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -102,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/estimate': typeof EstimateRoute
   '/login': typeof LoginRoute
+  '/planner': typeof PlannerRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/request-access': typeof RequestAccessRoute
@@ -109,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/demo/': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
+  '/planner/routes': typeof PlannerRoutesRoute
   '/projects/$id': typeof ProjectsIdRoute
 }
 export interface FileRoutesByTo {
@@ -118,6 +132,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/estimate': typeof EstimateRoute
   '/login': typeof LoginRoute
+  '/planner': typeof PlannerRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/request-access': typeof RequestAccessRoute
@@ -125,6 +140,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/demo': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
+  '/planner/routes': typeof PlannerRoutesRoute
   '/projects/$id': typeof ProjectsIdRoute
 }
 export interface FileRoutesById {
@@ -135,6 +151,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/estimate': typeof EstimateRoute
   '/login': typeof LoginRoute
+  '/planner': typeof PlannerRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/request-access': typeof RequestAccessRoute
@@ -142,6 +159,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/demo/': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
+  '/planner/routes': typeof PlannerRoutesRoute
   '/projects/$id': typeof ProjectsIdRoute
 }
 export interface FileRouteTypes {
@@ -153,6 +171,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/estimate'
     | '/login'
+    | '/planner'
     | '/privacy'
     | '/projects'
     | '/request-access'
@@ -160,6 +179,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/demo/'
     | '/customers/$id'
+    | '/planner/routes'
     | '/projects/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -169,6 +189,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/estimate'
     | '/login'
+    | '/planner'
     | '/privacy'
     | '/projects'
     | '/request-access'
@@ -176,6 +197,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/demo'
     | '/customers/$id'
+    | '/planner/routes'
     | '/projects/$id'
   id:
     | '__root__'
@@ -185,6 +207,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/estimate'
     | '/login'
+    | '/planner'
     | '/privacy'
     | '/projects'
     | '/request-access'
@@ -192,6 +215,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/demo/'
     | '/customers/$id'
+    | '/planner/routes'
     | '/projects/$id'
   fileRoutesById: FileRoutesById
 }
@@ -202,6 +226,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   EstimateRoute: typeof EstimateRoute
   LoginRoute: typeof LoginRoute
+  PlannerRoute: typeof PlannerRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ProjectsRoute: typeof ProjectsRouteWithChildren
   RequestAccessRoute: typeof RequestAccessRoute
@@ -245,6 +270,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/planner': {
+      id: '/planner'
+      path: '/planner'
+      fullPath: '/planner'
+      preLoaderRoute: typeof PlannerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -296,6 +328,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsIdRouteImport
       parentRoute: typeof ProjectsRoute
     }
+    '/planner/routes': {
+      id: '/planner/routes'
+      path: '/routes'
+      fullPath: '/planner/routes'
+      preLoaderRoute: typeof PlannerRoutesRouteImport
+      parentRoute: typeof PlannerRoute
+    }
     '/customers/$id': {
       id: '/customers/$id'
       path: '/$id'
@@ -325,6 +364,17 @@ const CustomersRouteWithChildren = CustomersRoute._addFileChildren(
   CustomersRouteChildren,
 )
 
+interface PlannerRouteChildren {
+  PlannerRoutesRoute: typeof PlannerRoutesRoute
+}
+
+const PlannerRouteChildren: PlannerRouteChildren = {
+  PlannerRoutesRoute: PlannerRoutesRoute,
+}
+
+const PlannerRouteWithChildren =
+  PlannerRoute._addFileChildren(PlannerRouteChildren)
+
 interface ProjectsRouteChildren {
   ProjectsIdRoute: typeof ProjectsIdRoute
 }
@@ -344,6 +394,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   EstimateRoute: EstimateRoute,
   LoginRoute: LoginRoute,
+  PlannerRoute: PlannerRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ProjectsRoute: ProjectsRouteWithChildren,
   RequestAccessRoute: RequestAccessRoute,

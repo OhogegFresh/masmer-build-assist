@@ -391,6 +391,59 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_jobs: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          customer_name: string
+          duration_minutes: number
+          id: string
+          job_address: string | null
+          job_type: string | null
+          notes: string | null
+          project_id: string | null
+          scheduled_date: string
+          start_time: string
+          status: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          customer_name: string
+          duration_minutes?: number
+          id?: string
+          job_address?: string | null
+          job_type?: string | null
+          notes?: string | null
+          project_id?: string | null
+          scheduled_date?: string
+          start_time?: string
+          status?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          customer_name?: string
+          duration_minutes?: number
+          id?: string
+          job_address?: string | null
+          job_type?: string | null
+          notes?: string | null
+          project_id?: string | null
+          scheduled_date?: string
+          start_time?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string

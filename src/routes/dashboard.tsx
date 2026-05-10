@@ -7,6 +7,8 @@ import { useDemo } from "@/components/masmer/DemoContext";
 import { VapiCard } from "@/components/masmer/VapiCard";
 import { OnboardingWizard, hasCompletedOnboarding } from "@/components/masmer/OnboardingWizard";
 import { Plus, FolderKanban, DollarSign, Clock, Sparkles, Loader2, PhoneIncoming, Copy, Check } from "lucide-react";
+import { CalendarDays, Navigation } from "lucide-react";
+import { ScheduledJob, fmtTime, todayISO, singleMapsUrl } from "@/components/masmer/planner/types";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
@@ -103,6 +105,7 @@ function DashboardPage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [selectedCall, setSelectedCall] = useState<CallRow | null>(null);
   const [copied, setCopied] = useState(false);
+  const [todayJobs, setTodayJobs] = useState<ScheduledJob[]>([]);
 
   useEffect(() => {
     if (!ready) return;
@@ -131,6 +134,14 @@ function DashboardPage() {
         .order("created_at", { ascending: false })
         .limit(3);
       if (!cancelled) setCalls((callsData ?? []) as CallRow[]);
+
+      const { data: jobsData } = await (supabase as any)
+        .from("scheduled_jobs")
+        .select("*")
+        .eq("scheduled_date", todayISO())
+        .order("start_time")
+        .limit(3);
+      if (!cancelled) setTodayJobs((jobsData ?? []) as ScheduledJob[]);
 
       setLoading(false);
 
@@ -322,6 +333,55 @@ function DashboardPage() {
           )}
         </SheetContent>
       </Sheet>
+
+      <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden mb-6">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+          <h2 className="font-display text-lg font-bold flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-orange" />
+            Today's Schedule
+          </h2>
+          <Link to="/planner" className="text-sm text-orange hover:text-orange/80">View Full Planner →</Link>
+        </div>
+        {todayJobs.length === 0 ? (
+          <div className="px-5 py-8 text-center">
+            <p className="text-sm text-muted-foreground mb-3">No jobs scheduled today</p>
+            <Link
+              to="/planner"
+              className="inline-flex items-center gap-2 rounded-md bg-gradient-orange px-4 py-2 text-sm font-bold text-foreground shadow-orange"
+            >
+              <Plus className="h-4 w-4" /> Plan your day →
+            </Link>
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {todayJobs.map((j) => (
+              <div key={j.id} className="px-5 py-3 flex items-center gap-3">
+                <span className="inline-flex rounded-full bg-orange/15 text-orange px-2 py-0.5 text-[11px] font-bold shrink-0">
+                  {fmtTime(j.start_time)}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-sm truncate">{j.customer_name}</div>
+                  {j.job_address && <div className="text-xs text-muted-foreground truncate">{j.job_address}</div>}
+                </div>
+                <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground hidden sm:inline">
+                  {j.status.replace("_", " ")}
+                </span>
+                {j.job_address && (
+                  <a
+                    href={singleMapsUrl(j.job_address)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-orange hover:text-orange/80"
+                    aria-label="Directions"
+                  >
+                    <Navigation className="h-4 w-4" />
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
