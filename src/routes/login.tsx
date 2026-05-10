@@ -1,98 +1,109 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/masmer/AuthContext";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Logo } from "@/components/masmer/Logo";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Admin Login — Masmer AI" },
-      { name: "description", content: "Sign in to manage Masmer AI." },
+      { title: "Sign in — Masmer AI" },
+      { name: "description", content: "Sign in to your Masmer AI account." },
       { name: "robots", content: "noindex" },
     ],
+  }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    suspended: s.suspended === "1" ? "1" : undefined,
   }),
   component: LoginPage,
 });
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const { refresh } = useAuth();
+  const search = Route.useSearch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
-    if (mode === "signin") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
       setLoading(false);
-      if (error) return toast.error(error.message);
-      toast.success("Signed in");
-      navigate({ to: "/dashboard" });
-    } else {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: `${window.location.origin}/dashboard` },
-      });
-      setLoading(false);
-      if (error) return toast.error(error.message);
-      toast.success("Account created. Check your email to confirm.");
+      return toast.error("Invalid credentials");
     }
+    // Verify app_user
+    const { data: appUser } = await (supabase as any)
+      .from("app_users").select("*").eq("email", email).maybeSingle();
+    if (!appUser) {
+      await supabase.auth.signOut();
+      setLoading(false);
+      return toast.error("Account not provisioned. Please request access.");
+    }
+    if (!appUser.is_active) {
+      await supabase.auth.signOut();
+      setLoading(false);
+      return toast.error("Account suspended");
+    }
+    await refresh();
+    toast.success("Signed in");
+    navigate({ to: "/dashboard" });
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-card">
-        <Link to="/" className="text-xs text-muted-foreground hover:text-orange">
-          ← Back to site
-        </Link>
-        <h1 className="mt-4 text-3xl font-black tracking-tighter">
-          {mode === "signin" ? "Admin Sign In" : "Create Account"}
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {mode === "signin"
-            ? "Sign in to view waitlist signups."
-            : "Create an account, then have an admin grant you access."}
-        </p>
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
-          <input
-            type="email"
-            required
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-md border border-border bg-background/60 px-4 py-3 text-sm focus:border-orange focus:outline-none focus:ring-2 focus:ring-orange/40"
-          />
-          <input
-            type="password"
-            required
-            minLength={6}
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-border bg-background/60 px-4 py-3 text-sm focus:border-orange focus:outline-none focus:ring-2 focus:ring-orange/40"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-gradient-orange px-6 py-3 text-sm font-black text-background shadow-orange disabled:opacity-60"
-          >
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            {mode === "signin" ? "Sign In" : "Create Account"}
-          </button>
-        </form>
-        <button
-          type="button"
-          onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-          className="mt-4 w-full text-xs text-muted-foreground hover:text-orange"
-        >
-          {mode === "signin"
-            ? "Need an account? Sign up"
-            : "Already have one? Sign in"}
-        </button>
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
+      <div className="w-full max-w-[420px]">
+        <div className="flex justify-center mb-8"><Logo /></div>
+        <div className="rounded-2xl border border-border bg-card p-8">
+          {search.suspended && (
+            <div className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              Your account has been suspended. Contact us for help.
+            </div>
+          )}
+          <h1 className="font-display text-3xl font-bold tracking-tight text-center">Welcome back</h1>
+          <p className="mt-2 text-sm text-muted-foreground text-center">Sign in to your Masmer AI account</p>
+          <form onSubmit={onSubmit} className="mt-6 space-y-3">
+            <input
+              type="email" required placeholder="Email"
+              value={email} onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-md border border-border bg-background/60 px-4 py-3 text-sm focus:border-orange focus:outline-none focus:ring-2 focus:ring-orange/40"
+            />
+            <div className="relative">
+              <input
+                type={show ? "text" : "password"} required minLength={6} placeholder="Password"
+                value={password} onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-md border border-border bg-background/60 px-4 py-3 pr-11 text-sm focus:border-orange focus:outline-none focus:ring-2 focus:ring-orange/40"
+              />
+              <button type="button" onClick={() => setShow((s) => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            <button type="submit" disabled={loading}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-orange px-6 py-3 text-sm font-bold text-white hover:bg-orange/90 disabled:opacity-60 transition">
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              Sign In
+            </button>
+          </form>
+          <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
+          </div>
+          <Link to="/request-access"
+            className="block w-full text-center rounded-md border border-border px-6 py-3 text-sm font-bold text-foreground hover:border-orange hover:text-orange transition">
+            Request Access
+          </Link>
+          <p className="mt-6 text-xs text-center text-muted-foreground">
+            Questions? <a href="mailto:jacob@casacapsolutions.com" className="text-orange hover:underline">jacob@casacapsolutions.com</a>
+          </p>
+        </div>
+        <div className="mt-4 text-center">
+          <Link to="/" className="text-xs text-muted-foreground hover:text-orange">← Back to site</Link>
+        </div>
       </div>
     </div>
   );

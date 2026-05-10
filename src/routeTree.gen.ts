@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as RequestAccessRouteImport } from './routes/request-access'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as EstimateRouteImport } from './routes/estimate'
@@ -24,6 +25,11 @@ import { Route as DemoRouteImport } from './routes/demo.'
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RequestAccessRoute = RequestAccessRouteImport.update({
+  id: '/request-access',
+  path: '/request-access',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsRoute = ProjectsRouteImport.update({
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/estimate': typeof EstimateRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRouteWithChildren
+  '/request-access': typeof RequestAccessRoute
   '/settings': typeof SettingsRoute
   '/demo/': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/estimate': typeof EstimateRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRouteWithChildren
+  '/request-access': typeof RequestAccessRoute
   '/settings': typeof SettingsRoute
   '/demo': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/estimate': typeof EstimateRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRouteWithChildren
+  '/request-access': typeof RequestAccessRoute
   '/settings': typeof SettingsRoute
   '/demo/': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/estimate'
     | '/login'
     | '/projects'
+    | '/request-access'
     | '/settings'
     | '/demo/'
     | '/customers/$id'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/estimate'
     | '/login'
     | '/projects'
+    | '/request-access'
     | '/settings'
     | '/demo'
     | '/customers/$id'
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/estimate'
     | '/login'
     | '/projects'
+    | '/request-access'
     | '/settings'
     | '/demo/'
     | '/customers/$id'
@@ -167,6 +179,7 @@ export interface RootRouteChildren {
   EstimateRoute: typeof EstimateRoute
   LoginRoute: typeof LoginRoute
   ProjectsRoute: typeof ProjectsRouteWithChildren
+  RequestAccessRoute: typeof RequestAccessRoute
   SettingsRoute: typeof SettingsRoute
   DemoRoute: typeof DemoRoute
 }
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/request-access': {
+      id: '/request-access'
+      path: '/request-access'
+      fullPath: '/request-access'
+      preLoaderRoute: typeof RequestAccessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects': {
@@ -285,6 +305,7 @@ const rootRouteChildren: RootRouteChildren = {
   EstimateRoute: EstimateRoute,
   LoginRoute: LoginRoute,
   ProjectsRoute: ProjectsRouteWithChildren,
+  RequestAccessRoute: RequestAccessRoute,
   SettingsRoute: SettingsRoute,
   DemoRoute: DemoRoute,
 }
