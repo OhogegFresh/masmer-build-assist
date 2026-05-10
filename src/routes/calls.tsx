@@ -68,6 +68,16 @@ function CallsPage() {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | LeadStatus>("all");
   const [openCall, setOpenCall] = useState<Call | null>(null);
+  const [convertCall, setConvertCall] = useState<Call | null>(null);
+  const [form, setForm] = useState({
+    customer_name: "",
+    customer_address: "",
+    project_title: "",
+    contract_total: "",
+    deposit: "1000",
+  });
+  const [creating, setCreating] = useState(false);
+  const [projectIdByCall, setProjectIdByCall] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!ready) return;
@@ -100,6 +110,55 @@ function CallsPage() {
     } else {
       toast.success(`Marked as ${status}`);
     }
+  }
+
+  function openConvert(c: Call) {
+    setForm({
+      customer_name: c.caller_name ?? "",
+      customer_address: c.job_address ?? "",
+      project_title: c.job_type ? `${c.job_type} Project` : "New Project",
+      contract_total: "",
+      deposit: "1000",
+    });
+    setConvertCall(c);
+  }
+
+  async function createProject() {
+    if (!convertCall) return;
+    if (!form.customer_name.trim() || !form.project_title.trim()) {
+      toast.error("Customer name and project title are required");
+      return;
+    }
+    setCreating(true);
+    const { data, error } = await supabase
+      .from("projects")
+      .insert({
+        customer_name: form.customer_name,
+        customer_address: form.customer_address || null,
+        project_title: form.project_title,
+        contract_total: Number(form.contract_total) || 0,
+        deposit: Number(form.deposit) || 0,
+        status: "new",
+        progress_pct: 0,
+        deposit_paid: false,
+        payment1_paid: false,
+        payment2_paid: false,
+        payment3_paid: false,
+        final_paid: false,
+      })
+      .select("id")
+      .single();
+    if (error || !data) {
+      setCreating(false);
+      toast.error("Failed to create project");
+      return;
+    }
+    await supabase.from("calls").update({ lead_status: "booked" }).eq("id", convertCall.id);
+    setCalls((prev) => prev.map((c) => (c.id === convertCall.id ? { ...c, lead_status: "booked" } : c)));
+    setProjectIdByCall((prev) => ({ ...prev, [convertCall.id]: data.id }));
+    setCreating(false);
+    setConvertCall(null);
+    toast.success("Project created!");
   }
 
   function copyAll(c: Call) {
