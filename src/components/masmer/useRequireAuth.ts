@@ -5,15 +5,13 @@ import { useAuth } from "./AuthContext";
 export function useRequireAuth(opts: { adminOnly?: boolean } = {}) {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
-  const { loading: authLoading, session, appUser, isAdmin } = useAuth();
+  const { loading: authLoading, session } = useAuth();
 
   useEffect(() => {
     if (authLoading) return;
     if (!session) { navigate({ to: "/login" }); return; }
-    if (appUser && !appUser.is_active) { navigate({ to: "/login", search: { suspended: "1" } as any }); return; }
-    if (opts.adminOnly && !isAdmin) { navigate({ to: "/dashboard" }); return; }
     setReady(true);
-  }, [navigate, authLoading, session, appUser, isAdmin, opts.adminOnly]);
+  }, [navigate, authLoading, session]);
 
   return ready;
 }
