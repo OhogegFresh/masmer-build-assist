@@ -5,8 +5,7 @@ import { useEffect, useState } from "react";
 const links = [
   { href: "#features", label: "Features" },
   { href: "#how", label: "How It Works" },
-  { href: "#pricing", label: "Pricing" },
-  { href: "#contact", label: "Contact" },
+  { href: "#contact", label: "Sign Up" },
 ];
 
 export function Navbar() {
@@ -40,23 +39,17 @@ export function Navbar() {
         </nav>
         <div className="flex items-center gap-3">
           <Link
-            to="/estimate"
-            className="hidden sm:inline text-sm font-semibold text-orange hover:text-orange/80 transition-colors"
-          >
-            Try Estimating Bot
-          </Link>
-          <Link
             to="/login"
             className="hidden sm:inline text-sm text-muted-foreground hover:text-orange transition-colors"
           >
             Sign in
           </Link>
-          <a
-            href="#contact"
+          <Link
+            to="/signup"
             className="inline-flex items-center justify-center rounded-md bg-gradient-orange px-4 py-2 text-sm font-bold text-foreground hover:shadow-orange transition-shadow"
           >
             Try Free
-          </a>
+          </Link>
         </div>
       </div>
     </header>
