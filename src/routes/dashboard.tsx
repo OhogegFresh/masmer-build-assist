@@ -6,7 +6,7 @@ import { useRequireAuth } from "@/components/masmer/useRequireAuth";
 import { useDemo } from "@/components/masmer/DemoContext";
 import { VapiCard } from "@/components/masmer/VapiCard";
 import { OnboardingWizard, hasCompletedOnboarding } from "@/components/masmer/OnboardingWizard";
-import { Plus, FolderKanban, DollarSign, Clock, Sparkles, Loader2, PhoneIncoming, Copy, Check, X } from "lucide-react";
+import { Plus, FolderKanban, DollarSign, Clock, Sparkles, Loader2, PhoneIncoming, Copy, Check } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
