@@ -71,9 +71,16 @@ function ProjectsPage() {
 
   if (!ready) return null;
 
+  const STATUS_OPTIONS = [
+    { value: "all", label: "All" },
+    { value: "new", label: "New" },
+    { value: "in_progress", label: "In Progress" },
+    { value: "completed", label: "Completed" },
+  ] as const;
+
   return (
     <AppShell
-      title="Projects"
+      title={`Projects${loading ? "" : ` · ${filtered.length} ${filtered.length === 1 ? "project" : "projects"}`}`}
       action={
         <Link to="/estimate" className="inline-flex items-center gap-2 rounded-md bg-gradient-orange px-4 py-2 text-sm font-bold text-foreground shadow-orange hover:scale-[1.02] transition-transform">
           <Plus className="h-4 w-4" />
@@ -87,26 +94,35 @@ function ProjectsPage() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search projects..."
+            placeholder="Search by customer, title, or address..."
             className="w-full rounded-md border border-border bg-card pl-10 pr-4 py-2.5 text-sm focus:border-orange focus:outline-none"
           />
         </div>
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="rounded-md border border-border bg-card px-3 py-2.5 text-sm focus:border-orange focus:outline-none"
-        >
-          <option value="all">All statuses</option>
-          <option value="new">New</option>
-          <option value="in_progress">In Progress</option>
-          <option value="completed">Completed</option>
-        </select>
+        <div className="flex flex-wrap gap-2">
+          {STATUS_OPTIONS.map((opt) => {
+            const active = status === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setStatus(opt.value)}
+                className={`rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
+                  active
+                    ? "bg-orange/15 border-orange text-orange"
+                    : "bg-card border-border text-muted-foreground hover:border-orange/40 hover:text-foreground"
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {loading ? (
         <div className="py-20 text-center"><Loader2 className="inline h-6 w-6 animate-spin text-orange" /></div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-12 text-center text-muted-foreground">No projects found.</div>
+        <div className="rounded-xl border border-border bg-card p-12 text-center text-muted-foreground">No projects match your search.</div>
       ) : (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((p) => (
