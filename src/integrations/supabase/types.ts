@@ -44,6 +44,48 @@ export type Database = {
         }
         Relationships: []
       }
+      demo_invites: {
+        Row: {
+          activated_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          invite_code: string
+          invitee_company: string | null
+          invitee_email: string | null
+          invitee_name: string | null
+          is_active: boolean
+          last_seen: string | null
+          page_views: number
+        }
+        Insert: {
+          activated_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invite_code: string
+          invitee_company?: string | null
+          invitee_email?: string | null
+          invitee_name?: string | null
+          is_active?: boolean
+          last_seen?: string | null
+          page_views?: number
+        }
+        Update: {
+          activated_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invite_code?: string
+          invitee_company?: string | null
+          invitee_email?: string | null
+          invitee_name?: string | null
+          is_active?: boolean
+          last_seen?: string | null
+          page_views?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
