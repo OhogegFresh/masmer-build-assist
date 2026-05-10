@@ -64,6 +64,18 @@ export function Waitlist() {
       toast.error("Submission failed. Please try again.");
       return;
     }
+    // Fire welcome email (don't block UX on failure)
+    supabase.functions
+      .invoke("send-welcome-email", {
+        body: {
+          email: parsed.data.email,
+          full_name: parsed.data.full_name,
+          business_name: parsed.data.business_name,
+          phone: parsed.data.phone,
+          contractor_type: parsed.data.contractor_type,
+        },
+      })
+      .catch((e) => console.error("welcome email failed", e));
     setSaved({ email: parsed.data.email, phone: parsed.data.phone });
     toast.success("You're on the waitlist!", {
       description: `Saved ${parsed.data.email}`,
