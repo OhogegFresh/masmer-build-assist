@@ -16,6 +16,7 @@ import {
   singleMapsUrl,
 } from "@/components/masmer/planner/types";
 import { AddJobModal } from "@/components/masmer/planner/AddJobModal";
+import { CustomerLeadPipe } from "@/components/masmer/planner/CustomerLeadPipe";
 
 export const Route = createFileRoute("/planner")({
   head: () => ({
@@ -32,12 +33,19 @@ const HOURS = Array.from({ length: 13 }, (_, i) => 7 + i); // 7am..7pm
 function PlannerPage() {
   const ready = useRequireAuth();
   const [date, setDate] = useState(todayISO());
-  const [view, setView] = useState<"day" | "week">("day");
+  const [view, setView] = useState<"day" | "week" | "month">("day");
   const [jobs, setJobs] = useState<ScheduledJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [addTime, setAddTime] = useState<string | undefined>();
   const [briefingOpen, setBriefingOpen] = useState(true);
+  const [leadOpen, setLeadOpen] = useState(false);
+  const [leadJob, setLeadJob] = useState<ScheduledJob | null>(null);
+
+  function openLead(j: ScheduledJob) {
+    setLeadJob(j);
+    setLeadOpen(true);
+  }
 
   const weekStart = useMemo(() => {
     const d = new Date(date + "T00:00:00");
@@ -49,10 +57,24 @@ function PlannerPage() {
 
   const weekDates = useMemo(() => Array.from({ length: 7 }, (_, i) => shiftDate(weekStart, i)), [weekStart]);
 
+  const monthRange = useMemo(() => {
+    const d = new Date(date + "T00:00:00");
+    const first = new Date(d.getFullYear(), d.getMonth(), 1);
+    const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+    const iso = (x: Date) =>
+      `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+    return { first: iso(first), last: iso(last), year: d.getFullYear(), month: d.getMonth() };
+  }, [date]);
+
   useEffect(() => {
     if (!ready) return;
     setLoading(true);
-    const range = view === "day" ? [date, date] : [weekDates[0], weekDates[6]];
+    const range =
+      view === "day"
+        ? [date, date]
+        : view === "week"
+          ? [weekDates[0], weekDates[6]]
+          : [monthRange.first, monthRange.last];
     (supabase as any)
       .from("scheduled_jobs")
       .select("*")
@@ -64,11 +86,16 @@ function PlannerPage() {
         setJobs((data ?? []) as ScheduledJob[]);
         setLoading(false);
       });
-  }, [ready, date, view, weekDates]);
+  }, [ready, date, view, weekDates, monthRange.first, monthRange.last]);
 
   function refresh() {
     setLoading(true);
-    const range = view === "day" ? [date, date] : [weekDates[0], weekDates[6]];
+    const range =
+      view === "day"
+        ? [date, date]
+        : view === "week"
+          ? [weekDates[0], weekDates[6]]
+          : [monthRange.first, monthRange.last];
     (supabase as any)
       .from("scheduled_jobs")
       .select("*")
@@ -122,6 +149,12 @@ function PlannerPage() {
       }
     >
       <AddJobModal open={addOpen} onClose={() => setAddOpen(false)} onSaved={refresh} defaultDate={date} defaultTime={addTime} />
+      <CustomerLeadPipe
+        open={leadOpen}
+        onClose={() => setLeadOpen(false)}
+        customerName={leadJob?.customer_name}
+        jobAddress={leadJob?.job_address}
+      />
 
       {/* AI Briefing */}
       <div className="mb-5 rounded-xl border border-border bg-card overflow-hidden">
@@ -142,7 +175,15 @@ function PlannerPage() {
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setDate(shiftDate(date, -1))}
+            onClick={() => {
+              if (view === "month") {
+                const d = new Date(date + "T00:00:00");
+                d.setMonth(d.getMonth() - 1);
+                setDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+              } else {
+                setDate(shiftDate(date, view === "week" ? -7 : -1));
+              }
+            }}
             className="h-9 w-9 rounded-md border border-border bg-card hover:bg-secondary inline-flex items-center justify-center"
             aria-label="Previous"
           >
@@ -155,13 +196,25 @@ function PlannerPage() {
             Today
           </button>
           <button
-            onClick={() => setDate(shiftDate(date, 1))}
+            onClick={() => {
+              if (view === "month") {
+                const d = new Date(date + "T00:00:00");
+                d.setMonth(d.getMonth() + 1);
+                setDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+              } else {
+                setDate(shiftDate(date, view === "week" ? 7 : 1));
+              }
+            }}
             className="h-9 w-9 rounded-md border border-border bg-card hover:bg-secondary inline-flex items-center justify-center"
             aria-label="Next"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
-          <h2 className="font-display text-2xl font-bold ml-2">{fmtDateLong(date)}</h2>
+          <h2 className="font-display text-2xl font-bold ml-2">
+            {view === "month"
+              ? new Date(date + "T00:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" })
+              : fmtDateLong(date)}
+          </h2>
         </div>
         <div className="inline-flex rounded-md border border-border bg-card overflow-hidden">
           <button
@@ -176,6 +229,12 @@ function PlannerPage() {
           >
             Week
           </button>
+          <button
+            onClick={() => setView("month")}
+            className={`px-3 py-1.5 text-sm font-semibold ${view === "month" ? "bg-orange/15 text-orange" : "text-muted-foreground"}`}
+          >
+            Month
+          </button>
         </div>
       </div>
 
@@ -189,10 +248,22 @@ function PlannerPage() {
                 setAddTime(t);
                 setAddOpen(true);
               }}
+              onJobClick={openLead}
             />
-          ) : (
+          ) : view === "week" ? (
             <WeekCalendar
               dates={weekDates}
+              jobs={jobs}
+              onPickDay={(d) => {
+                setDate(d);
+                setView("day");
+              }}
+              onJobClick={openLead}
+            />
+          ) : (
+            <MonthCalendar
+              year={monthRange.year}
+              month={monthRange.month}
               jobs={jobs}
               onPickDay={(d) => {
                 setDate(d);
@@ -241,13 +312,19 @@ function PlannerPage() {
                         </span>
                       </div>
                     )}
-                    <div className={`rounded-lg border border-border bg-background p-3 border-l-4 ${STATUS_BORDER[j.status]}`}>
+                    <div
+                      onClick={() => openLead(j)}
+                      className={`cursor-pointer rounded-lg border border-border bg-background p-3 border-l-4 hover:border-orange/60 transition-colors ${STATUS_BORDER[j.status]}`}
+                    >
                       <div className="flex items-center justify-between mb-1">
                         <span className="inline-flex rounded-full bg-orange/15 text-orange px-2 py-0.5 text-[11px] font-bold">
                           {fmtTime(j.start_time)}
                         </span>
                         <button
-                          onClick={() => toggleStatus(j)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleStatus(j);
+                          }}
                           className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground hover:text-orange"
                         >
                           {j.status.replace("_", " ")}
@@ -269,6 +346,7 @@ function PlannerPage() {
                             href={singleMapsUrl(j.job_address)}
                             target="_blank"
                             rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
                             className="inline-flex items-center gap-1 text-[11px] font-bold text-orange hover:underline"
                           >
                             <Navigation className="h-3 w-3" /> Directions
@@ -344,7 +422,7 @@ function PlannerPage() {
   );
 }
 
-function DayCalendar({ jobs, onSlotClick }: { jobs: ScheduledJob[]; onSlotClick: (t: string) => void }) {
+function DayCalendar({ jobs, onSlotClick, onJobClick }: { jobs: ScheduledJob[]; onSlotClick: (t: string) => void; onJobClick: (j: ScheduledJob) => void }) {
   return (
     <div className="relative">
       {HOURS.map((h) => (
@@ -379,7 +457,8 @@ function DayCalendar({ jobs, onSlotClick }: { jobs: ScheduledJob[]; onSlotClick:
           return (
             <div
               key={j.id}
-              className={`pointer-events-auto absolute left-[68px] right-2 rounded-md border border-l-4 ${STATUS_BORDER[j.status]} bg-card px-3 py-1.5 shadow-card text-xs overflow-hidden`}
+              onClick={() => onJobClick(j)}
+              className={`pointer-events-auto cursor-pointer absolute left-[68px] right-2 rounded-md border border-l-4 hover:border-orange/60 transition-colors ${STATUS_BORDER[j.status]} bg-card px-3 py-1.5 shadow-card text-xs overflow-hidden`}
               style={{ top, height }}
             >
               <div className="font-bold text-[13px] text-foreground truncate">{j.customer_name}</div>
@@ -395,7 +474,7 @@ function DayCalendar({ jobs, onSlotClick }: { jobs: ScheduledJob[]; onSlotClick:
   );
 }
 
-function WeekCalendar({ dates, jobs, onPickDay }: { dates: string[]; jobs: ScheduledJob[]; onPickDay: (d: string) => void }) {
+function WeekCalendar({ dates, jobs, onPickDay, onJobClick }: { dates: string[]; jobs: ScheduledJob[]; onPickDay: (d: string) => void; onJobClick: (j: ScheduledJob) => void }) {
   return (
     <div className="grid grid-cols-[60px_repeat(7,1fr)]">
       <div className="border-b border-r border-border" />
@@ -415,13 +494,13 @@ function WeekCalendar({ dates, jobs, onPickDay }: { dates: string[]; jobs: Sched
         );
       })}
       {HOURS.map((h) => (
-        <Row key={h} hour={h} dates={dates} jobs={jobs} />
+        <Row key={h} hour={h} dates={dates} jobs={jobs} onJobClick={onJobClick} />
       ))}
     </div>
   );
 }
 
-function Row({ hour, dates, jobs }: { hour: number; dates: string[]; jobs: ScheduledJob[] }) {
+function Row({ hour, dates, jobs, onJobClick }: { hour: number; dates: string[]; jobs: ScheduledJob[]; onJobClick: (j: ScheduledJob) => void }) {
   return (
     <>
       <div className="border-b border-r border-border px-2 py-1 text-[10px] text-muted-foreground" style={{ height: 50 }}>
@@ -432,7 +511,11 @@ function Row({ hour, dates, jobs }: { hour: number; dates: string[]; jobs: Sched
         return (
           <div key={d} className="border-b border-r border-border last:border-r-0 p-1 space-y-1" style={{ height: 50 }}>
             {dayJobs.map((j) => (
-              <div key={j.id} className={`rounded border-l-2 ${STATUS_BORDER[j.status]} bg-background px-1.5 py-0.5 text-[10px] font-semibold truncate`}>
+              <div
+                key={j.id}
+                onClick={() => onJobClick(j)}
+                className={`cursor-pointer rounded border-l-2 hover:bg-secondary ${STATUS_BORDER[j.status]} bg-background px-1.5 py-0.5 text-[10px] font-semibold truncate`}
+              >
                 {j.customer_name}
               </div>
             ))}
@@ -440,5 +523,73 @@ function Row({ hour, dates, jobs }: { hour: number; dates: string[]; jobs: Sched
         );
       })}
     </>
+  );
+}
+
+function MonthCalendar({
+  year,
+  month,
+  jobs,
+  onPickDay,
+}: {
+  year: number;
+  month: number;
+  jobs: ScheduledJob[];
+  onPickDay: (d: string) => void;
+}) {
+  const today = todayISO();
+  const first = new Date(year, month, 1);
+  const startWeekday = first.getDay(); // 0=Sun
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells: (string | null)[] = [];
+  for (let i = 0; i < startWeekday; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push(`${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
+  }
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const counts = jobs.reduce<Record<string, number>>((acc, j) => {
+    acc[j.scheduled_date] = (acc[j.scheduled_date] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  return (
+    <div>
+      <div className="grid grid-cols-7 border-b border-border">
+        {dayLabels.map((d) => (
+          <div key={d} className="px-2 py-2 text-[10px] uppercase tracking-wider text-muted-foreground text-center">
+            {d}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7">
+        {cells.map((iso, i) => {
+          if (!iso) return <div key={i} className="h-24 border-b border-r border-border bg-background/30" />;
+          const count = counts[iso] ?? 0;
+          const isToday = iso === today;
+          const dayNum = Number(iso.slice(-2));
+          return (
+            <button
+              key={iso}
+              onClick={() => onPickDay(iso)}
+              className={`h-24 border-b border-r border-border last:border-r-0 p-2 text-left hover:bg-secondary transition-colors flex flex-col ${
+                count > 0 ? "bg-orange/5 border-l-2 border-l-orange/50" : ""
+              } ${isToday ? "ring-2 ring-orange ring-inset" : ""}`}
+            >
+              <div className="flex items-center justify-between">
+                <span className={`text-sm font-bold ${isToday ? "text-orange" : ""}`}>{dayNum}</span>
+                {count > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full bg-orange text-[10px] font-bold text-foreground">
+                    {count}
+                  </span>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
