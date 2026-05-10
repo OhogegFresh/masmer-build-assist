@@ -730,10 +730,32 @@ function EstimatePage() {
   const [priceStep, setPriceStep] = useState(false);
   const [activeDoc, setActiveDoc] = useState<"contract" | "materials" | "punchlist">("contract");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const estimateRef = useRef<HTMLDivElement>(null);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [pulseDownloads, setPulseDownloads] = useState(false);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading, project]);
+
+  // Detect if the AI is generating the final estimate (after user confirmation)
+  const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+  const isGeneratingEstimate = loading && !!lastUserMsg && isConfirmation(lastUserMsg.content);
+  const currentStep = computeStep(messages, !!project);
+  const userHasSent = messages.some((m) => m.role === "user");
+
+  // Estimate ready celebration
+  useEffect(() => {
+    if (!project) return;
+    setShowCelebration(true);
+    setPulseDownloads(true);
+    const t1 = setTimeout(() => {
+      setShowCelebration(false);
+      estimateRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 1500);
+    const t2 = setTimeout(() => setPulseDownloads(false), 1200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [project]);
 
   const send = async () => {
     const text = input.trim();
@@ -810,28 +832,7 @@ function EstimatePage() {
         </div>
 
         {/* Progress Steps */}
-        <div className="flex items-center justify-center gap-2 mb-8 text-xs">
-          {[
-            { label: "1. Describe Project", done: messages.length > 1 },
-            { label: "2. Review Materials", done: !!project },
-            { label: "3. Enter Price", done: totalNum > 0 },
-            { label: "4. Download Docs", done: false },
-          ].map((step, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <div
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1 ${
-                  step.done
-                    ? "bg-orange/20 text-orange border border-orange/40"
-                    : "bg-secondary text-muted-foreground border border-border"
-                }`}
-              >
-                {step.done && <CheckCircle2 className="h-3 w-3" />}
-                {step.label}
-              </div>
-              {i < 3 && <div className="h-px w-4 bg-border" />}
-            </div>
-          ))}
-        </div>
+        <ProgressSteps current={currentStep} />
 
         {/* Chat Window */}
         <div className="rounded-2xl border border-orange/30 bg-card shadow-orange overflow-hidden flex flex-col h-[55vh] mb-8">
@@ -857,9 +858,7 @@ function EstimatePage() {
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-secondary/60 border border-border rounded-xl px-4 py-2.5">
-                  <Loader2 className="h-4 w-4 animate-spin text-orange" />
-                </div>
+                <TypingIndicator generating={isGeneratingEstimate} />
               </div>
             )}
           </div>
@@ -884,9 +883,43 @@ function EstimatePage() {
           </form>
         </div>
 
+        {/* Quick start prompts (before first user message) */}
+        {!userHasSent && !project && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8 -mt-4">
+            {QUICK_PROMPTS.map((p, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setInput(p.text)}
+                className="text-left rounded-xl border border-border border-l-4 border-l-orange/70 bg-card hover:shadow-orange hover:border-orange/60 transition-all p-4 cursor-pointer"
+              >
+                <p className="font-bold text-sm">{p.title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5" style={{ fontWeight: 400 }}>
+                  {p.subtitle}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Celebration overlay */}
+        {showCelebration && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-sm pointer-events-none">
+            <div className="relative flex flex-col items-center gap-4">
+              <Confetti />
+              <div className="check-pop h-20 w-20 rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center">
+                <Check className="h-10 w-10 text-green-400" strokeWidth={3} />
+              </div>
+              <p className="font-display text-2xl font-bold text-foreground animate-fade-in">
+                Estimate Ready! 🎉
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Materials Summary (shown after project generated) */}
         {project && (
-          <div className="space-y-6">
+          <div ref={estimateRef} className="space-y-6 slide-up-fade">
             {/* Materials Cost Card */}
             <div className="rounded-2xl border border-orange/30 bg-card shadow-orange overflow-hidden">
               <div className="p-5 border-b border-border flex items-center justify-between">
@@ -1025,7 +1058,7 @@ function EstimatePage() {
 
                 {/* Document Download Buttons */}
                 {totalNum > 0 && (
-                  <div className="space-y-3">
+                  <div className={`space-y-3 ${pulseDownloads ? "btn-pulse-once" : ""}`}>
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">
                       Download Your Documents
                     </p>
