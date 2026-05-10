@@ -368,6 +368,92 @@ function AdminPage() {
                 </table>
               </div>
             </div>
+            </>
+            )}
+
+            {tab === "demos" && (
+              <div className="rounded-2xl border border-border bg-card overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
+                      <tr>
+                        <th className="text-left px-4 py-3">Code</th>
+                        <th className="text-left px-4 py-3">Name</th>
+                        <th className="text-left px-4 py-3">Email</th>
+                        <th className="text-left px-4 py-3">Company</th>
+                        <th className="text-left px-4 py-3">Status</th>
+                        <th className="text-left px-4 py-3">Days Left</th>
+                        <th className="text-left px-4 py-3">Views</th>
+                        <th className="text-left px-4 py-3">Last Seen</th>
+                        <th className="text-left px-4 py-3">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {demosLoading ? (
+                        <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
+                          <Loader2 className="inline h-5 w-5 animate-spin text-orange" />
+                        </td></tr>
+                      ) : demos.length === 0 ? (
+                        <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
+                          No demo invites yet.
+                        </td></tr>
+                      ) : demos.map((d) => {
+                        const expired = !d.is_active || new Date(d.expires_at) < new Date();
+                        const ms = new Date(d.expires_at).getTime() - Date.now();
+                        const daysLeft = Math.max(0, Math.ceil(ms / (24 * 60 * 60 * 1000)));
+                        return (
+                          <tr key={d.id} className="border-t border-border hover:bg-secondary/20">
+                            <td className="px-4 py-3 font-mono text-xs">{d.invite_code}</td>
+                            <td className="px-4 py-3 font-medium">{d.invitee_name ?? "—"}</td>
+                            <td className="px-4 py-3 font-mono text-xs">{d.invitee_email ?? "—"}</td>
+                            <td className="px-4 py-3">{d.invitee_company ?? "—"}</td>
+                            <td className="px-4 py-3">
+                              {expired ? (
+                                <span className="rounded-full bg-destructive/15 text-destructive border border-destructive/40 px-2 py-0.5 text-xs font-semibold">{!d.is_active ? "Revoked" : "Expired"}</span>
+                              ) : (
+                                <span className="rounded-full bg-green-500/15 text-green-400 border border-green-500/40 px-2 py-0.5 text-xs font-semibold">Active</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-xs">{daysLeft}</td>
+                            <td className="px-4 py-3 text-xs">{d.page_views}</td>
+                            <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                              {d.last_seen ? new Date(d.last_seen).toLocaleString() : "Never"}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex flex-wrap gap-1.5">
+                                <button
+                                  onClick={() => copyDemoLink(d)}
+                                  className="inline-flex items-center gap-1 rounded-md border border-border hover:border-orange hover:text-orange px-2 py-1 text-xs"
+                                >
+                                  <Copy className="h-3 w-3" /> Copy
+                                </button>
+                                <button
+                                  onClick={() => extendDemo(d)}
+                                  disabled={demoBusy === d.id}
+                                  className="inline-flex items-center gap-1 rounded-md border border-orange/40 text-orange hover:bg-orange/10 px-2 py-1 text-xs font-semibold disabled:opacity-50"
+                                >
+                                  {demoBusy === d.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CalendarPlus className="h-3 w-3" />}
+                                  +7d
+                                </button>
+                                {d.is_active && (
+                                  <button
+                                    onClick={() => revokeDemo(d)}
+                                    disabled={demoBusy === d.id}
+                                    className="inline-flex items-center gap-1 rounded-md border border-destructive/40 text-destructive hover:bg-destructive/10 px-2 py-1 text-xs font-semibold disabled:opacity-50"
+                                  >
+                                    <Ban className="h-3 w-3" /> Revoke
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </>
         )}
       </main>
