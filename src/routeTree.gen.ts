@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as EstimateRouteImport } from './routes/estimate'
@@ -20,6 +21,11 @@ import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
 import { Route as CustomersIdRouteImport } from './routes/customers.$id'
 import { Route as DemoRouteImport } from './routes/demo.'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsRoute = ProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/estimate': typeof EstimateRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRouteWithChildren
+  '/settings': typeof SettingsRoute
   '/demo/': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
   '/projects/$id': typeof ProjectsIdRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/estimate': typeof EstimateRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRouteWithChildren
+  '/settings': typeof SettingsRoute
   '/demo': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
   '/projects/$id': typeof ProjectsIdRoute
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/estimate': typeof EstimateRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRouteWithChildren
+  '/settings': typeof SettingsRoute
   '/demo/': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
   '/projects/$id': typeof ProjectsIdRoute
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/estimate'
     | '/login'
     | '/projects'
+    | '/settings'
     | '/demo/'
     | '/customers/$id'
     | '/projects/$id'
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/estimate'
     | '/login'
     | '/projects'
+    | '/settings'
     | '/demo'
     | '/customers/$id'
     | '/projects/$id'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/estimate'
     | '/login'
     | '/projects'
+    | '/settings'
     | '/demo/'
     | '/customers/$id'
     | '/projects/$id'
@@ -155,11 +167,19 @@ export interface RootRouteChildren {
   EstimateRoute: typeof EstimateRoute
   LoginRoute: typeof LoginRoute
   ProjectsRoute: typeof ProjectsRouteWithChildren
+  SettingsRoute: typeof SettingsRoute
   DemoRoute: typeof DemoRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects': {
       id: '/projects'
       path: '/projects'
@@ -265,8 +285,19 @@ const rootRouteChildren: RootRouteChildren = {
   EstimateRoute: EstimateRoute,
   LoginRoute: LoginRoute,
   ProjectsRoute: ProjectsRouteWithChildren,
+  SettingsRoute: SettingsRoute,
   DemoRoute: DemoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
