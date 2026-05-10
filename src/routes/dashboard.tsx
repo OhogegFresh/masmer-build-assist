@@ -101,6 +101,8 @@ function DashboardPage() {
   const [calls, setCalls] = useState<CallRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [selectedCall, setSelectedCall] = useState<CallRow | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!ready) return;
