@@ -73,11 +73,11 @@ function CustomersPage() {
       notes: String(fd.get("notes") ?? "").trim() || null,
     };
     if (!payload.name) return toast.error("Name required");
-    const { error } = await supabase.from("customers").insert(payload);
+    const { data, error } = await supabase.from("customers").insert(payload).select().single();
     if (error) return toast.error(error.message);
-    toast.success("Customer added");
+    if (data) setCustomers((prev) => [data as Customer, ...prev]);
+    toast.success("Customer added.");
     setShowModal(false);
-    load();
   }
 
   if (!ready) return null;
