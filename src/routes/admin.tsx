@@ -1,15 +1,18 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Search, LogOut, ShieldAlert, Copy, Ban, CalendarPlus } from "lucide-react";
+import { Loader2, Search, LogOut, ShieldAlert, Copy, Ban, CalendarPlus, Check, X, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Waitlist Admin — Masmer AI" },
+      { title: "Admin — Masmer AI" },
       { name: "robots", content: "noindex" },
     ],
+  }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    tab: typeof s.tab === "string" ? s.tab : undefined,
   }),
   component: AdminPage,
 });
@@ -40,8 +43,23 @@ type DemoInviteRow = {
   last_seen: string | null;
 };
 
+type AccessRequestRow = {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  business_name: string | null;
+  business_type: string | null;
+  referral_source: string | null;
+  message: string | null;
+  status: string;
+  created_at: string;
+  reviewed_at: string | null;
+};
+
 function AdminPage() {
   const navigate = useNavigate();
+  const initialTab = (Route.useSearch() as any).tab;
   const [authChecked, setAuthChecked] = useState(false);
   const [authed, setAuthed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -51,10 +69,27 @@ function AdminPage() {
   const [contractorType, setContractorType] = useState("");
   const [feature, setFeature] = useState("");
   const [extending, setExtending] = useState<string | null>(null);
-  const [tab, setTab] = useState<"waitlist" | "demos">("waitlist");
+  const [tab, setTab] = useState<"waitlist" | "demos" | "requests">(
+    initialTab === "requests" ? "requests" : initialTab === "demos" ? "demos" : "waitlist",
+  );
   const [demos, setDemos] = useState<DemoInviteRow[]>([]);
   const [demosLoading, setDemosLoading] = useState(true);
   const [demoBusy, setDemoBusy] = useState<string | null>(null);
+  const [requests, setRequests] = useState<AccessRequestRow[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(true);
+  const [expandedMsg, setExpandedMsg] = useState<string | null>(null);
+  const [approveTarget, setApproveTarget] = useState<AccessRequestRow | null>(null);
+  const [approveBusy, setApproveBusy] = useState(false);
+  const [approvePwd, setApprovePwd] = useState("");
+  const [denyBusy, setDenyBusy] = useState<string | null>(null);
+
+  async function loadRequests() {
+    setRequestsLoading(true);
+    const { data } = await (supabase as any)
+      .from("access_requests").select("*").order("created_at", { ascending: false });
+    setRequests((data as AccessRequestRow[]) ?? []);
+    setRequestsLoading(false);
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -113,7 +148,52 @@ function AdminPage() {
       setDemos((data as DemoInviteRow[]) ?? []);
       setDemosLoading(false);
     })();
+    loadRequests();
   }, [authed]);
+
+  function genPwd() {
+    const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    let s = "";
+    for (let i = 0; i < 12; i++) s += chars[Math.floor(Math.random() * chars.length)];
+    return s + "!";
+  }
+
+  function openApprove(r: AccessRequestRow) {
+    setApproveTarget(r);
+    setApprovePwd(genPwd());
+  }
+
+  async function confirmApprove() {
+    if (!approveTarget) return;
+    setApproveBusy(true);
+    const { data, error } = await supabase.functions.invoke("approve-access-request", {
+      body: {
+        request_id: approveTarget.id,
+        email: approveTarget.email,
+        password: approvePwd,
+        full_name: approveTarget.full_name,
+        business_name: approveTarget.business_name,
+      },
+    });
+    setApproveBusy(false);
+    if (error || (data as any)?.error) {
+      return toast.error((data as any)?.error ?? error?.message ?? "Failed");
+    }
+    toast.success("Approved & email sent");
+    setApproveTarget(null);
+    loadRequests();
+  }
+
+  async function denyRequest(r: AccessRequestRow) {
+    setDenyBusy(r.id);
+    const { error } = await (supabase as any).from("access_requests")
+      .update({ status: "denied", reviewed_at: new Date().toISOString() })
+      .eq("id", r.id);
+    setDenyBusy(null);
+    if (error) return toast.error("Failed to deny");
+    toast.success("Marked as denied");
+    loadRequests();
+  }
 
   async function extendDemo(row: DemoInviteRow) {
     setDemoBusy(row.id);
@@ -258,6 +338,17 @@ function AdminPage() {
                 className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors ${tab === "demos" ? "border-orange text-orange" : "border-transparent text-muted-foreground hover:text-foreground"}`}
               >
                 Demo Invites
+              </button>
+              <button
+                onClick={() => setTab("requests")}
+                className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors ${tab === "requests" ? "border-orange text-orange" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+              >
+                Access Requests
+                {requests.filter((r) => r.status === "pending").length > 0 && (
+                  <span className="ml-2 rounded-full bg-orange px-1.5 py-0.5 text-[10px] text-white">
+                    {requests.filter((r) => r.status === "pending").length}
+                  </span>
+                )}
               </button>
             </div>
 
