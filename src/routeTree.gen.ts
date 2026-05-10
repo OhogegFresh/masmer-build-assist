@@ -9,9 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RequestAccessRouteImport } from './routes/request-access'
 import { Route as ProjectsRouteImport } from './routes/projects'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as EstimateRouteImport } from './routes/estimate'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -22,6 +24,11 @@ import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
 import { Route as CustomersIdRouteImport } from './routes/customers.$id'
 import { Route as DemoRouteImport } from './routes/demo.'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -35,6 +42,11 @@ const RequestAccessRoute = RequestAccessRouteImport.update({
 const ProjectsRoute = ProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -90,9 +102,11 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/estimate': typeof EstimateRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/request-access': typeof RequestAccessRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/demo/': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
   '/projects/$id': typeof ProjectsIdRoute
@@ -104,9 +118,11 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/estimate': typeof EstimateRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/request-access': typeof RequestAccessRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/demo': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
   '/projects/$id': typeof ProjectsIdRoute
@@ -119,9 +135,11 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/estimate': typeof EstimateRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/request-access': typeof RequestAccessRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/demo/': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
   '/projects/$id': typeof ProjectsIdRoute
@@ -135,9 +153,11 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/estimate'
     | '/login'
+    | '/privacy'
     | '/projects'
     | '/request-access'
     | '/settings'
+    | '/terms'
     | '/demo/'
     | '/customers/$id'
     | '/projects/$id'
@@ -149,9 +169,11 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/estimate'
     | '/login'
+    | '/privacy'
     | '/projects'
     | '/request-access'
     | '/settings'
+    | '/terms'
     | '/demo'
     | '/customers/$id'
     | '/projects/$id'
@@ -163,9 +185,11 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/estimate'
     | '/login'
+    | '/privacy'
     | '/projects'
     | '/request-access'
     | '/settings'
+    | '/terms'
     | '/demo/'
     | '/customers/$id'
     | '/projects/$id'
@@ -178,14 +202,23 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   EstimateRoute: typeof EstimateRoute
   LoginRoute: typeof LoginRoute
+  PrivacyRoute: typeof PrivacyRoute
   ProjectsRoute: typeof ProjectsRouteWithChildren
   RequestAccessRoute: typeof RequestAccessRoute
   SettingsRoute: typeof SettingsRoute
+  TermsRoute: typeof TermsRoute
   DemoRoute: typeof DemoRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -205,6 +238,13 @@ declare module '@tanstack/react-router' {
       path: '/projects'
       fullPath: '/projects'
       preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -304,9 +344,11 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   EstimateRoute: EstimateRoute,
   LoginRoute: LoginRoute,
+  PrivacyRoute: PrivacyRoute,
   ProjectsRoute: ProjectsRouteWithChildren,
   RequestAccessRoute: RequestAccessRoute,
   SettingsRoute: SettingsRoute,
+  TermsRoute: TermsRoute,
   DemoRoute: DemoRoute,
 }
 export const routeTree = rootRouteImport
