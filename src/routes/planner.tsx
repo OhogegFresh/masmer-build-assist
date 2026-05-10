@@ -16,7 +16,7 @@ import {
   singleMapsUrl,
 } from "@/components/masmer/planner/types";
 import { AddJobModal } from "@/components/masmer/planner/AddJobModal";
-import { CustomerLeadPipe } from "@/components/masmer/planner/CustomerLeadPipe";
+import { CustomerLeadPipe } from "@/components/masmer/CustomerLeadPipe";
 
 export const Route = createFileRoute("/planner")({
   head: () => ({
@@ -152,8 +152,8 @@ function PlannerPage() {
       <CustomerLeadPipe
         open={leadOpen}
         onClose={() => setLeadOpen(false)}
-        customerName={leadJob?.customer_name}
-        jobAddress={leadJob?.job_address}
+        customerName={leadJob?.customer_name ?? ""}
+        address={leadJob?.job_address}
       />
 
       {/* AI Briefing */}
