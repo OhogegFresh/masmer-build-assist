@@ -12,9 +12,9 @@ export function Footer() {
           </p>
         </div>
         <nav className="flex md:justify-center gap-6 text-sm text-muted-foreground">
-          <a href="#" className="hover:text-gold transition-colors">Privacy Policy</a>
-          <a href="#" className="hover:text-gold transition-colors">Terms of Service</a>
-          <a href="#contact" className="hover:text-gold transition-colors">Contact</a>
+          <a href="#" className="hover:text-orange transition-colors">Privacy Policy</a>
+          <a href="#" className="hover:text-orange transition-colors">Terms of Service</a>
+          <a href="#contact" className="hover:text-orange transition-colors">Contact</a>
         </nav>
         <p className="md:text-right text-xs text-muted-foreground">
           © 2026 Masmer AI. All rights reserved.

@@ -629,7 +629,7 @@ function EstimatePage() {
           <Logo />
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-gold transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-orange transition-colors"
           >
             <ArrowLeft className="h-4 w-4" /> Back to home
           </Link>
@@ -639,11 +639,11 @@ function EstimatePage() {
       <main className="mx-auto max-w-5xl px-4 pt-24 pb-16">
         {/* Title */}
         <div className="text-center mb-8">
-          <p className="text-gold font-bold uppercase tracking-widest text-xs mb-2">
+          <p className="text-orange font-bold uppercase tracking-widest text-xs mb-2">
             AI Project Builder
           </p>
           <h1 className="text-3xl md:text-4xl font-black tracking-tighter">
-            Build Your <span className="text-gradient-gold">Scope of Work</span>
+            Build Your <span className="text-gradient-orange">Scope of Work</span>
           </h1>
           <p className="text-muted-foreground mt-2 text-sm max-w-lg mx-auto">
             Describe the project and I'll generate your contract, materials list, and crew punchlist instantly.
@@ -662,7 +662,7 @@ function EstimatePage() {
               <div
                 className={`flex items-center gap-1.5 rounded-full px-3 py-1 ${
                   step.done
-                    ? "bg-gold/20 text-gold border border-gold/40"
+                    ? "bg-orange/20 text-orange border border-orange/40"
                     : "bg-secondary text-muted-foreground border border-border"
                 }`}
               >
@@ -675,9 +675,9 @@ function EstimatePage() {
         </div>
 
         {/* Chat Window */}
-        <div className="rounded-2xl border border-gold/30 bg-card shadow-gold overflow-hidden flex flex-col h-[55vh] mb-8">
+        <div className="rounded-2xl border border-orange/30 bg-card shadow-orange overflow-hidden flex flex-col h-[55vh] mb-8">
           <div className="border-b border-border px-5 py-3 bg-secondary/30 flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-gold animate-pulse" />
+            <div className="h-2 w-2 rounded-full bg-orange animate-pulse" />
             <span className="text-xs font-semibold text-muted-foreground">
               Masmer AI — Project Assistant
             </span>
@@ -688,7 +688,7 @@ function EstimatePage() {
                 <div
                   className={`max-w-[85%] rounded-xl px-4 py-2.5 text-sm whitespace-pre-wrap ${
                     m.role === "user"
-                      ? "bg-gradient-gold text-background font-medium"
+                      ? "bg-gradient-orange text-background font-medium"
                       : "bg-secondary/60 border border-border"
                   }`}
                 >
@@ -699,7 +699,7 @@ function EstimatePage() {
             {loading && (
               <div className="flex justify-start">
                 <div className="bg-secondary/60 border border-border rounded-xl px-4 py-2.5">
-                  <Loader2 className="h-4 w-4 animate-spin text-gold" />
+                  <Loader2 className="h-4 w-4 animate-spin text-orange" />
                 </div>
               </div>
             )}
@@ -713,12 +713,12 @@ function EstimatePage() {
               onChange={(e) => setInput(e.target.value)}
               placeholder={project ? "Ask a follow-up question…" : "Describe your project…"}
               disabled={loading}
-              className="flex-1 rounded-md bg-background border border-border px-3 py-2.5 text-sm focus:outline-none focus:border-gold/60"
+              className="flex-1 rounded-md bg-background border border-border px-3 py-2.5 text-sm focus:outline-none focus:border-orange/60"
             />
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="inline-flex items-center gap-1.5 rounded-md bg-gradient-gold px-4 py-2.5 text-sm font-bold text-background disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md bg-gradient-orange px-4 py-2.5 text-sm font-bold text-background disabled:opacity-50"
             >
               <Send className="h-4 w-4" /> Send
             </button>
@@ -729,10 +729,10 @@ function EstimatePage() {
         {project && (
           <div className="space-y-6">
             {/* Materials Cost Card */}
-            <div className="rounded-2xl border border-gold/30 bg-card shadow-gold overflow-hidden">
+            <div className="rounded-2xl border border-orange/30 bg-card shadow-orange overflow-hidden">
               <div className="p-5 border-b border-border flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <ShoppingCart className="h-5 w-5 text-gold" />
+                  <ShoppingCart className="h-5 w-5 text-orange" />
                   <div>
                     <p className="font-bold">Materials Estimate</p>
                     <p className="text-xs text-muted-foreground">
@@ -742,7 +742,7 @@ function EstimatePage() {
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-muted-foreground">Est. Materials Total</p>
-                  <p className="text-2xl font-black text-gradient-gold">
+                  <p className="text-2xl font-black text-gradient-orange">
                     {fmt(project.materials_grand_total)}
                   </p>
                 </div>
@@ -752,7 +752,7 @@ function EstimatePage() {
               <div className="divide-y divide-border">
                 {project.materials_sections.map((sec, si) => (
                   <div key={si} className="p-4">
-                    <p className="text-xs font-bold text-gold uppercase tracking-wider mb-2">
+                    <p className="text-xs font-bold text-orange uppercase tracking-wider mb-2">
                       {sec.section_title}
                     </p>
                     <div className="space-y-1">
@@ -791,7 +791,7 @@ function EstimatePage() {
                       ))}
                     </div>
                     <div className="mt-2 flex justify-end">
-                      <span className="text-xs font-bold text-gold">
+                      <span className="text-xs font-bold text-orange">
                         Section Total: {fmt(sec.section_total)}
                       </span>
                     </div>
@@ -802,10 +802,10 @@ function EstimatePage() {
 
             {/* Price Entry */}
             {priceStep && (
-              <div className="rounded-2xl border border-gold/40 bg-card shadow-gold p-6">
+              <div className="rounded-2xl border border-orange/40 bg-card shadow-orange p-6">
                 <h3 className="font-bold text-lg mb-1">Enter Your Contract Price</h3>
                 <p className="text-sm text-muted-foreground mb-5">
-                  Materials estimate: <strong className="text-gold">{fmt(project.materials_grand_total)}</strong>.
+                  Materials estimate: <strong className="text-orange">{fmt(project.materials_grand_total)}</strong>.
                   Add your labor, markup, and profit margin, then enter the total below.
                 </p>
                 <div className="grid sm:grid-cols-2 gap-4 mb-6">
@@ -818,7 +818,7 @@ function EstimatePage() {
                       value={contractTotal}
                       onChange={(e) => setContractTotal(e.target.value)}
                       placeholder="e.g. 24,500"
-                      className="w-full rounded-md border border-gold/40 bg-background px-4 py-3 text-lg font-bold focus:outline-none focus:border-gold"
+                      className="w-full rounded-md border border-orange/40 bg-background px-4 py-3 text-lg font-bold focus:outline-none focus:border-orange"
                     />
                   </div>
                   <div>
@@ -830,7 +830,7 @@ function EstimatePage() {
                       value={deposit}
                       onChange={(e) => setDeposit(e.target.value)}
                       placeholder="e.g. 1000"
-                      className="w-full rounded-md border border-border bg-background px-4 py-3 text-lg font-bold focus:outline-none focus:border-gold"
+                      className="w-full rounded-md border border-border bg-background px-4 py-3 text-lg font-bold focus:outline-none focus:border-orange"
                     />
                   </div>
                 </div>
@@ -838,7 +838,7 @@ function EstimatePage() {
                 {/* Payment Schedule Preview */}
                 {pay && (
                   <div className="mb-6 rounded-xl border border-border bg-secondary/30 p-4">
-                    <p className="text-xs font-bold text-gold uppercase tracking-wider mb-3">
+                    <p className="text-xs font-bold text-orange uppercase tracking-wider mb-3">
                       Payment Schedule Preview
                     </p>
                     <div className="space-y-2 text-sm">
@@ -850,14 +850,14 @@ function EstimatePage() {
                         { label: "Final (10%)", amount: pay.p4, when: "After walk-through" },
                       ].map((p, i) => (
                         <div key={i} className="flex items-center justify-between">
-                          <span className="font-bold text-gold">• {p.label}</span>
+                          <span className="font-bold text-orange">• {p.label}</span>
                           <span className="font-bold">{fmt(p.amount)}</span>
                           <span className="text-muted-foreground text-xs">{p.when}</span>
                         </div>
                       ))}
                       <div className="border-t border-border pt-2 flex items-center justify-between font-black">
                         <span>Total</span>
-                        <span className="text-gradient-gold">{fmt(totalNum)}</span>
+                        <span className="text-gradient-orange">{fmt(totalNum)}</span>
                         <span className="text-muted-foreground text-xs">Labor & Materials</span>
                       </div>
                     </div>
@@ -873,7 +873,7 @@ function EstimatePage() {
                     <div className="grid sm:grid-cols-3 gap-3">
                       <button
                         onClick={() => generateContractPDF(project, totalNum, depositNum)}
-                        className="flex flex-col items-center gap-2 rounded-xl border border-gold/40 bg-gradient-gold p-4 text-background font-bold hover:scale-[1.02] transition-transform"
+                        className="flex flex-col items-center gap-2 rounded-xl border border-orange/40 bg-gradient-orange p-4 text-background font-bold hover:scale-[1.02] transition-transform"
                       >
                         <FileText className="h-6 w-6" />
                         <span className="text-sm">Scope of Work</span>
@@ -881,9 +881,9 @@ function EstimatePage() {
                       </button>
                       <button
                         onClick={() => generateMaterialsPDF(project)}
-                        className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 text-foreground font-bold hover:border-gold/40 transition-colors"
+                        className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 text-foreground font-bold hover:border-orange/40 transition-colors"
                       >
-                        <ShoppingCart className="h-6 w-6 text-gold" />
+                        <ShoppingCart className="h-6 w-6 text-orange" />
                         <span className="text-sm">Materials List</span>
                         <span className="text-xs font-normal text-muted-foreground">
                           Confidential • Office Only
@@ -891,9 +891,9 @@ function EstimatePage() {
                       </button>
                       <button
                         onClick={() => generatePunchlistPDF(project)}
-                        className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 text-foreground font-bold hover:border-gold/40 transition-colors"
+                        className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 text-foreground font-bold hover:border-orange/40 transition-colors"
                       >
-                        <ClipboardList className="h-6 w-6 text-gold" />
+                        <ClipboardList className="h-6 w-6 text-orange" />
                         <span className="text-sm">Crew Punchlist</span>
                         <span className="text-xs font-normal text-muted-foreground">
                           Simple field sheet
@@ -908,7 +908,7 @@ function EstimatePage() {
                           setTimeout(() => generateMaterialsPDF(project), 500);
                           setTimeout(() => generatePunchlistPDF(project), 1000);
                         }}
-                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-md bg-gradient-gold px-6 py-3.5 text-sm font-bold text-background shadow-gold hover:scale-[1.01] transition-transform"
+                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-md bg-gradient-orange px-6 py-3.5 text-sm font-bold text-background shadow-orange hover:scale-[1.01] transition-transform"
                       >
                         <Download className="h-4 w-4" />
                         Download All 3 Documents
@@ -923,13 +923,13 @@ function EstimatePage() {
             {project.punchlist_items.length > 0 && (
               <div className="rounded-2xl border border-border bg-card p-5">
                 <div className="flex items-center gap-2 mb-4">
-                  <ClipboardList className="h-5 w-5 text-gold" />
+                  <ClipboardList className="h-5 w-5 text-orange" />
                   <p className="font-bold">Quick Crew Punchlist Preview</p>
                 </div>
                 <div className="space-y-2">
                   {project.punchlist_items.map((item, i) => (
                     <div key={i} className="flex items-start gap-3 text-sm">
-                      <div className="mt-0.5 h-4 w-4 rounded border border-gold/60 flex-shrink-0" />
+                      <div className="mt-0.5 h-4 w-4 rounded border border-orange/60 flex-shrink-0" />
                       <span>{item}</span>
                     </div>
                   ))}

@@ -35,11 +35,11 @@ export function Features() {
       <div className="mx-auto max-w-7xl px-6">
         <Reveal>
           <div className="text-center mb-16">
-            <p className="text-gold font-bold uppercase tracking-widest text-xs mb-3">
+            <p className="text-orange font-bold uppercase tracking-widest text-xs mb-3">
               The Solution
             </p>
             <h2 className="text-4xl md:text-6xl font-black tracking-tighter">
-              Meet Your <span className="text-gradient-gold">AI Team</span>
+              Meet Your <span className="text-gradient-orange">AI Team</span>
             </h2>
           </div>
         </Reveal>

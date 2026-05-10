@@ -24,7 +24,7 @@ export function HowItWorks() {
       <div className="mx-auto max-w-6xl px-6">
         <Reveal>
           <h2 className="text-center text-4xl md:text-6xl font-black tracking-tighter">
-            Up and Running in <span className="text-gradient-gold">48 Hours</span>
+            Up and Running in <span className="text-gradient-orange">48 Hours</span>
           </h2>
         </Reveal>
         <div className="relative mt-16 grid gap-6 md:grid-cols-3">

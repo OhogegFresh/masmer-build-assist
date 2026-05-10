@@ -114,7 +114,7 @@ function AdminPage() {
   if (!authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-gold" />
+        <Loader2 className="h-6 w-6 animate-spin text-orange" />
       </div>
     );
   }
@@ -124,16 +124,16 @@ function AdminPage() {
       <header className="border-b border-border">
         <div className="mx-auto max-w-7xl px-6 py-5 flex items-center justify-between">
           <div>
-            <Link to="/" className="text-xs text-muted-foreground hover:text-gold">
+            <Link to="/" className="text-xs text-muted-foreground hover:text-orange">
               ← Site
             </Link>
             <h1 className="text-2xl font-black tracking-tighter mt-1">
-              Waitlist <span className="text-gradient-gold">Admin</span>
+              Waitlist <span className="text-gradient-orange">Admin</span>
             </h1>
           </div>
           <button
             onClick={signOut}
-            className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:border-gold hover:text-gold"
+            className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:border-orange hover:text-orange"
           >
             <LogOut className="h-4 w-4" />
             Sign out
@@ -148,8 +148,8 @@ function AdminPage() {
             <h2 className="mt-4 text-2xl font-black">Access denied</h2>
             <p className="mt-2 text-muted-foreground max-w-md mx-auto">
               Your account doesn't have admin access. Ask an existing admin to
-              grant you the <code className="text-gold">admin</code> role in the
-              <code className="text-gold"> user_roles</code> table.
+              grant you the <code className="text-orange">admin</code> role in the
+              <code className="text-orange"> user_roles</code> table.
             </p>
           </div>
         ) : (
@@ -161,13 +161,13 @@ function AdminPage() {
                   placeholder="Search name, business, email, phone..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded-md border border-border bg-card pl-10 pr-4 py-2.5 text-sm focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40"
+                  className="w-full rounded-md border border-border bg-card pl-10 pr-4 py-2.5 text-sm focus:border-orange focus:outline-none focus:ring-2 focus:ring-orange/40"
                 />
               </div>
               <select
                 value={contractorType}
                 onChange={(e) => setContractorType(e.target.value)}
-                className="rounded-md border border-border bg-card px-3 py-2.5 text-sm focus:border-gold focus:outline-none"
+                className="rounded-md border border-border bg-card px-3 py-2.5 text-sm focus:border-orange focus:outline-none"
               >
                 <option value="">All contractor types</option>
                 {types.map((t) => (
@@ -177,7 +177,7 @@ function AdminPage() {
               <select
                 value={feature}
                 onChange={(e) => setFeature(e.target.value)}
-                className="rounded-md border border-border bg-card px-3 py-2.5 text-sm focus:border-gold focus:outline-none"
+                className="rounded-md border border-border bg-card px-3 py-2.5 text-sm focus:border-orange focus:outline-none"
               >
                 <option value="">All feature interests</option>
                 {features.map((f) => (
@@ -207,7 +207,7 @@ function AdminPage() {
                   <tbody>
                     {loading ? (
                       <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
-                        <Loader2 className="inline h-5 w-5 animate-spin text-gold" />
+                        <Loader2 className="inline h-5 w-5 animate-spin text-orange" />
                       </td></tr>
                     ) : filtered.length === 0 ? (
                       <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
@@ -220,7 +220,7 @@ function AdminPage() {
                         <td className="px-4 py-3 font-mono text-xs">{r.phone}</td>
                         <td className="px-4 py-3 font-mono text-xs">{r.email}</td>
                         <td className="px-4 py-3"><span className="rounded-full bg-secondary px-2 py-0.5 text-xs">{r.contractor_type}</span></td>
-                        <td className="px-4 py-3"><span className="rounded-full border border-gold/40 text-gold px-2 py-0.5 text-xs">{r.feature_interest}</span></td>
+                        <td className="px-4 py-3"><span className="rounded-full border border-orange/40 text-orange px-2 py-0.5 text-xs">{r.feature_interest}</span></td>
                         <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                           {new Date(r.created_at).toLocaleString()}
                         </td>

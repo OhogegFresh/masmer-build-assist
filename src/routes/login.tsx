@@ -46,7 +46,7 @@ function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-card">
-        <Link to="/" className="text-xs text-muted-foreground hover:text-gold">
+        <Link to="/" className="text-xs text-muted-foreground hover:text-orange">
           ← Back to site
         </Link>
         <h1 className="mt-4 text-3xl font-black tracking-tighter">
@@ -64,7 +64,7 @@ function LoginPage() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-md border border-border bg-background/60 px-4 py-3 text-sm focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40"
+            className="w-full rounded-md border border-border bg-background/60 px-4 py-3 text-sm focus:border-orange focus:outline-none focus:ring-2 focus:ring-orange/40"
           />
           <input
             type="password"
@@ -73,12 +73,12 @@ function LoginPage() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-border bg-background/60 px-4 py-3 text-sm focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40"
+            className="w-full rounded-md border border-border bg-background/60 px-4 py-3 text-sm focus:border-orange focus:outline-none focus:ring-2 focus:ring-orange/40"
           />
           <button
             type="submit"
             disabled={loading}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-gradient-gold px-6 py-3 text-sm font-black text-background shadow-gold disabled:opacity-60"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-gradient-orange px-6 py-3 text-sm font-black text-background shadow-orange disabled:opacity-60"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             {mode === "signin" ? "Sign In" : "Create Account"}
@@ -87,7 +87,7 @@ function LoginPage() {
         <button
           type="button"
           onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-          className="mt-4 w-full text-xs text-muted-foreground hover:text-gold"
+          className="mt-4 w-full text-xs text-muted-foreground hover:text-orange"
         >
           {mode === "signin"
             ? "Need an account? Sign up"
