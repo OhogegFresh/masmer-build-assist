@@ -20,7 +20,9 @@ CONVERSATION FLOW — follow this exactly:
    - Any TBD items (colors, styles, finishes not yet decided)
 3. Once you have ALL required info, call the "generate_project" tool.
 
-Keep messages short, friendly, professional. Use plain text only, no markdown.`;
+Keep messages short, friendly, professional. Use plain text only, no markdown.
+
+IMPORTANT: As soon as you have enough information to produce a reasonable estimate, you MUST call the generate_project tool. Do not keep asking questions forever. If the user has provided project type, rough scope, and at least approximate dimensions or square footage, call the tool. Make reasonable assumptions for any missing minor details and note them as TBD.`;
 
 const tools = [
   {
@@ -154,7 +156,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
         tools,
       }),
@@ -170,9 +172,11 @@ Deno.serve(async (req) => {
     }
 
     const data = await response.json();
+    console.log("AI response:", JSON.stringify(data).slice(0, 2000));
     const choice = data.choices?.[0]?.message ?? {};
     const toolCall = choice.tool_calls?.[0];
     let project = null;
+    let parseError: string | null = null;
 
     if (toolCall?.function?.name === "generate_project") {
       try {
@@ -196,12 +200,20 @@ Deno.serve(async (req) => {
           0,
         );
       } catch (e) {
-        console.error("Failed to parse project JSON", e);
+        console.error("Failed to parse project JSON", e, toolCall.function.arguments);
+        parseError = String(e);
       }
     }
 
+    let content = choice.content ?? "";
+    if (!content && !project) {
+      content = parseError
+        ? "I tried to generate your estimate but hit a formatting issue. Please tell me again the project type, dimensions, and material grade."
+        : "Could you give me a bit more detail about the project (type of work, room dimensions, and material grade)?";
+    }
+
     return new Response(
-      JSON.stringify({ content: choice.content ?? "", project }),
+      JSON.stringify({ content, project }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
