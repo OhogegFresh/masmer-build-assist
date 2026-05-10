@@ -545,9 +545,136 @@ function AdminPage() {
                 </div>
               </div>
             )}
+
+            {tab === "requests" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-muted-foreground">{requests.length} total</div>
+                  <button onClick={loadRequests} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-orange">
+                    <RefreshCw className="h-3 w-3" /> Refresh
+                  </button>
+                </div>
+                <div className="rounded-2xl border border-border bg-card overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
+                        <tr>
+                          <th className="text-left px-4 py-3">Submitted</th>
+                          <th className="text-left px-4 py-3">Name</th>
+                          <th className="text-left px-4 py-3">Email</th>
+                          <th className="text-left px-4 py-3">Phone</th>
+                          <th className="text-left px-4 py-3">Business</th>
+                          <th className="text-left px-4 py-3">Type</th>
+                          <th className="text-left px-4 py-3">Source</th>
+                          <th className="text-left px-4 py-3">Message</th>
+                          <th className="text-left px-4 py-3">Status</th>
+                          <th className="text-left px-4 py-3">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {requestsLoading ? (
+                          <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">
+                            <Loader2 className="inline h-5 w-5 animate-spin text-orange" />
+                          </td></tr>
+                        ) : requests.length === 0 ? (
+                          <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">
+                            No access requests yet.
+                          </td></tr>
+                        ) : requests.map((r) => {
+                          const isExpanded = expandedMsg === r.id;
+                          const msg = r.message ?? "";
+                          const truncated = msg.length > 50 ? msg.slice(0, 50) + "…" : msg;
+                          return (
+                            <tr key={r.id} className="border-t border-border hover:bg-secondary/20 align-top">
+                              <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</td>
+                              <td className="px-4 py-3 font-medium">{r.full_name}</td>
+                              <td className="px-4 py-3 font-mono text-xs">{r.email}</td>
+                              <td className="px-4 py-3 font-mono text-xs">{r.phone ?? "—"}</td>
+                              <td className="px-4 py-3">{r.business_name ?? "—"}</td>
+                              <td className="px-4 py-3 text-xs">{r.business_type ?? "—"}</td>
+                              <td className="px-4 py-3 text-xs">{r.referral_source ?? "—"}</td>
+                              <td className="px-4 py-3 text-xs max-w-[200px]">
+                                {msg ? (
+                                  <button onClick={() => setExpandedMsg(isExpanded ? null : r.id)}
+                                    className="text-left text-muted-foreground hover:text-foreground">
+                                    {isExpanded ? msg : truncated}
+                                  </button>
+                                ) : "—"}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${
+                                  r.status === "approved" ? "bg-green-500/15 text-green-400 border-green-500/40" :
+                                  r.status === "denied" ? "bg-destructive/15 text-destructive border-destructive/40" :
+                                  "bg-orange/15 text-orange border-orange/40"
+                                }`}>{r.status[0].toUpperCase() + r.status.slice(1)}</span>
+                              </td>
+                              <td className="px-4 py-3">
+                                {r.status === "pending" && (
+                                  <div className="flex flex-wrap gap-1.5">
+                                    <button onClick={() => openApprove(r)}
+                                      className="inline-flex items-center gap-1 rounded-md border border-green-500/40 text-green-400 hover:bg-green-500/10 px-2 py-1 text-xs font-semibold">
+                                      <Check className="h-3 w-3" /> Approve
+                                    </button>
+                                    <button onClick={() => denyRequest(r)} disabled={denyBusy === r.id}
+                                      className="inline-flex items-center gap-1 rounded-md border border-destructive/40 text-destructive hover:bg-destructive/10 px-2 py-1 text-xs font-semibold disabled:opacity-50">
+                                      {denyBusy === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />} Deny
+                                    </button>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </main>
+
+      {approveTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => !approveBusy && setApproveTarget(null)}>
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-display text-2xl font-bold tracking-tight">Approve access</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Create account for this user?</p>
+            <div className="mt-4 rounded-md border border-border bg-background/40 p-3 text-sm space-y-1">
+              <div><span className="text-muted-foreground">Name:</span> <strong>{approveTarget.full_name}</strong></div>
+              <div><span className="text-muted-foreground">Business:</span> {approveTarget.business_name ?? "—"}</div>
+              <div><span className="text-muted-foreground">Type:</span> {approveTarget.business_type ?? "—"}</div>
+            </div>
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Email</label>
+                <input value={approveTarget.email} readOnly
+                  className="w-full rounded-md border border-border bg-background/60 px-3 py-2 text-sm font-mono" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Temporary password</label>
+                <div className="flex gap-2">
+                  <input value={approvePwd} onChange={(e) => setApprovePwd(e.target.value)}
+                    className="flex-1 rounded-md border border-border bg-background/60 px-3 py-2 text-sm font-mono" />
+                  <button type="button" onClick={() => setApprovePwd(genPwd())}
+                    className="rounded-md border border-border px-3 text-xs hover:border-orange hover:text-orange">
+                    <RefreshCw className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex gap-2 justify-end">
+              <button onClick={() => setApproveTarget(null)} disabled={approveBusy}
+                className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary">Cancel</button>
+              <button onClick={confirmApprove} disabled={approveBusy || approvePwd.length < 6}
+                className="inline-flex items-center gap-2 rounded-md bg-orange text-white px-4 py-2 text-sm font-bold hover:bg-orange/90 disabled:opacity-60">
+                {approveBusy && <Loader2 className="h-4 w-4 animate-spin" />}
+                Send Approval & Create Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
