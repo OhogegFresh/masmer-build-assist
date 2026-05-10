@@ -376,6 +376,83 @@ function CallsPage() {
           )}
         </SheetContent>
       </Sheet>
+
+      <Dialog open={!!convertCall} onOpenChange={(o) => !o && !creating && setConvertCall(null)}>
+        <DialogContent className="bg-card border-border sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Create Project from Call</DialogTitle>
+            <DialogDescription>
+              Review and edit the details, then create a project.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-2">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Customer Name</label>
+              <input
+                value={form.customer_name}
+                onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
+                className="mt-1 w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm focus:border-orange focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Customer Address</label>
+              <input
+                value={form.customer_address}
+                onChange={(e) => setForm({ ...form, customer_address: e.target.value })}
+                className="mt-1 w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm focus:border-orange focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Project Title</label>
+              <input
+                value={form.project_title}
+                onChange={(e) => setForm({ ...form, project_title: e.target.value })}
+                className="mt-1 w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm focus:border-orange focus:outline-none"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contract Total ($)</label>
+                <input
+                  type="number"
+                  value={form.contract_total}
+                  onChange={(e) => setForm({ ...form, contract_total: e.target.value })}
+                  placeholder="0"
+                  className="mt-1 w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm focus:border-orange focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Deposit ($)</label>
+                <input
+                  type="number"
+                  value={form.deposit}
+                  onChange={(e) => setForm({ ...form, deposit: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm focus:border-orange focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-6">
+            <button
+              onClick={() => setConvertCall(null)}
+              disabled={creating}
+              className="rounded-md border border-border bg-secondary px-4 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={createProject}
+              disabled={creating}
+              className="inline-flex items-center gap-2 rounded-md bg-gradient-orange px-4 py-2 text-sm font-bold text-foreground shadow-orange hover:scale-[1.02] transition-transform disabled:opacity-60"
+            >
+              {creating && <Loader2 className="h-4 w-4 animate-spin" />}
+              Create Project
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
