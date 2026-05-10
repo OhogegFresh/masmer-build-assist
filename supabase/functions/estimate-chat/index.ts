@@ -6,79 +6,125 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `You are Masmer AI, an estimating assistant for contractors.
+const SYSTEM_PROMPT = `You are an expert construction estimating assistant for a home improvement company.
 
-CONVERSATION FLOW:
-1. Greet warmly and ask the user to describe their project.
-2. Ask follow-up questions ONE AT A TIME (do not lump multiple questions in one message). Cover all of:
-   - Type of work (bathroom, kitchen, flooring, drywall, roofing, siding, or other)
-   - Room dimensions and total square footage
-   - Material grade preference (budget, mid-range, premium)
-   - Whether demolition work is needed (yes/no)
-   - Timeline / desired completion window
-3. Once you have ALL required info, call the "generate_estimate" tool with realistic US construction pricing. Do NOT include the estimate as text — only via the tool call.
+CONVERSATION FLOW — follow this exactly:
+1. Greet warmly and ask the contractor to describe their project in detail.
+2. Ask follow-up questions ONE AT A TIME until you have ALL of the following:
+   - Customer full name
+   - Project address (street, city, state, zip)
+   - Project title (e.g. "Flooring & Interior Renovation", "Exterior Home Improvement")
+   - Complete description of ALL work to be done
+   - Room/area measurements for every space (dimensions in feet)
+   - Which materials the customer is providing themselves (if any)
+   - Any TBD items (colors, styles, finishes not yet decided)
+3. Once you have ALL required info, call the "generate_project" tool.
 
-Keep messages short, friendly, professional. Use plain text, no markdown headings.`;
+Keep messages short, friendly, professional. Use plain text only, no markdown.`;
 
 const tools = [
   {
     type: "function",
     function: {
-      name: "generate_estimate",
+      name: "generate_project",
       description:
-        "Generate a final professional estimate once all project info has been gathered.",
+        "Generate all three project documents once all project info has been gathered: private materials list, full scope of work contract, and quick crew punchlist.",
       parameters: {
         type: "object",
         properties: {
+          customer_name: { type: "string" },
+          project_address: { type: "string" },
           project_title: { type: "string" },
           project_summary: { type: "string" },
-          square_footage: { type: "number" },
-          timeline: { type: "string" },
-          materials: {
+
+          // MATERIALS LIST (private, office only)
+          materials_sections: {
             type: "array",
+            description: "Grouped sections of materials needed for the job",
             items: {
               type: "object",
               properties: {
-                item: { type: "string" },
-                qty: { type: "number" },
-                unit: { type: "string" },
-                unit_cost: { type: "number" },
-                total: { type: "number" },
+                section_title: { type: "string" },
+                section_subtitle: { type: "string", description: "Measurement summary for this section" },
+                items: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      item: { type: "string" },
+                      qty: { type: "number", description: "Base quantity BEFORE 15% buffer" },
+                      unit: { type: "string" },
+                      unit_cost: { type: "number" },
+                      hd_link: { type: "string", description: "Home Depot category URL for this item" },
+                      tbd_note: { type: "string", description: "Leave empty string if not TBD" },
+                    },
+                    required: ["item", "qty", "unit", "unit_cost", "hd_link", "tbd_note"],
+                    additionalProperties: false,
+                  },
+                },
               },
-              required: ["item", "qty", "unit", "unit_cost", "total"],
+              required: ["section_title", "section_subtitle", "items"],
               additionalProperties: false,
             },
           },
-          labor: {
+
+          // SCOPE OF WORK sections
+          scope_sections: {
             type: "array",
+            description: "Sections of the scope of work for the customer contract",
             items: {
               type: "object",
               properties: {
-                task: { type: "string" },
-                hours: { type: "number" },
-                rate: { type: "number" },
-                total: { type: "number" },
+                section_label: { type: "string", description: "e.g. SECTION A — HARDWOOD FLOOR RESTORATION" },
+                work_items: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      code: { type: "string", description: "e.g. A-1" },
+                      title: { type: "string" },
+                      bullets: { type: "array", items: { type: "string" } },
+                    },
+                    required: ["code", "title", "bullets"],
+                    additionalProperties: false,
+                  },
+                },
               },
-              required: ["task", "hours", "rate", "total"],
+              required: ["section_label", "work_items"],
               additionalProperties: false,
             },
           },
-          materials_subtotal: { type: "number" },
-          labor_subtotal: { type: "number" },
-          contractor_markup: { type: "number" },
-          project_total: { type: "number" },
+
+          // PUNCHLIST
+          punchlist_items: {
+            type: "array",
+            description: "Short simple bullet tasks for the crew punchlist",
+            items: { type: "string" },
+          },
+
+          // JOB-SPECIFIC DISCLAIMER BULLETS
+          job_specific_disclaimers: {
+            type: "array",
+            description: "1-3 job-specific disclaimer bullets based on the type of work",
+            items: { type: "string" },
+          },
+
+          // TOTALS
+          materials_grand_total: {
+            type: "number",
+            description: "Grand total of all materials WITH 15% buffer applied",
+          },
         },
         required: [
+          "customer_name",
+          "project_address",
           "project_title",
           "project_summary",
-          "square_footage",
-          "timeline",
-          "materials",
-          "labor",
-          "materials_subtotal",
-          "labor_subtotal",
-          "contractor_markup",
-          "project_total",
+          "materials_sections",
+          "scope_sections",
+          "punchlist_items",
+          "job_specific_disclaimers",
+          "materials_grand_total",
         ],
         additionalProperties: false,
       },
@@ -126,17 +172,36 @@ Deno.serve(async (req) => {
     const data = await response.json();
     const choice = data.choices?.[0]?.message ?? {};
     const toolCall = choice.tool_calls?.[0];
-    let estimate = null;
-    if (toolCall?.function?.name === "generate_estimate") {
+    let project = null;
+
+    if (toolCall?.function?.name === "generate_project") {
       try {
-        estimate = JSON.parse(toolCall.function.arguments);
+        project = JSON.parse(toolCall.function.arguments);
+        // Apply 15% buffer to all material quantities
+        project.materials_sections = project.materials_sections.map((sec: any) => ({
+          ...sec,
+          items: sec.items.map((item: any) => ({
+            ...item,
+            qty_buffered: Math.ceil(item.qty * 1.15),
+            total: Math.ceil(item.qty * 1.15) * item.unit_cost,
+          })),
+          section_total: sec.items.reduce(
+            (sum: number, item: any) => sum + Math.ceil(item.qty * 1.15) * item.unit_cost,
+            0,
+          ),
+        }));
+        // Recalculate grand total with buffer
+        project.materials_grand_total = project.materials_sections.reduce(
+          (sum: number, sec: any) => sum + sec.section_total,
+          0,
+        );
       } catch (e) {
-        console.error("Failed to parse estimate JSON", e);
+        console.error("Failed to parse project JSON", e);
       }
     }
 
     return new Response(
-      JSON.stringify({ content: choice.content ?? "", estimate }),
+      JSON.stringify({ content: choice.content ?? "", project }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
