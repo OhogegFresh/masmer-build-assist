@@ -142,16 +142,21 @@ function ProjectDetailPage() {
             <option value="in_progress">In Progress</option>
             <option value="completed">Completed</option>
           </select>
-          <select
-            value={project.progress_pct}
-            onChange={(e) => update({ progress_pct: Number(e.target.value) })}
-            className="rounded-md border border-border bg-secondary px-3 py-2 text-sm focus:border-orange focus:outline-none"
-          >
-            <option value={0}>0%</option>
-            <option value={60}>60%</option>
-            <option value={90}>90%</option>
-            <option value={100}>100%</option>
-          </select>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={0}
+              max={100}
+              defaultValue={project.progress_pct}
+              key={project.id + ":" + project.progress_pct}
+              onBlur={(e) => {
+                const v = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+                if (v !== project.progress_pct) update({ progress_pct: v });
+              }}
+              className="w-20 rounded-md border border-border bg-secondary px-3 py-2 text-sm focus:border-orange focus:outline-none"
+            />
+            <span className="text-sm font-semibold text-muted-foreground">{project.progress_pct}%</span>
+          </div>
           <StatusBadge status={project.status} />
         </div>
       </div>
