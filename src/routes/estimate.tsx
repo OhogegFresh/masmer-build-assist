@@ -13,6 +13,11 @@ import {
   CheckCircle2,
   ExternalLink,
   AlertTriangle,
+  Check,
+  Wrench,
+  Home,
+  TreePine,
+  Hammer,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -82,8 +87,162 @@ const fmt = (n: number) =>
 const INITIAL: Msg = {
   role: "assistant",
   content:
-    "Hi! I'm your Masmer AI project assistant. Tell me about your project — who's the customer, where's the job, and what work needs to be done? I'll generate your full scope of work, private materials list, and crew punchlist.",
+    "Hey! 👋 I'm your Masmer AI estimating assistant. I'll help you build a complete professional scope of work and materials list in just a few minutes.\n\nTo get started — what's your full name?",
 };
+
+// ─── Helper: confirmation detection ───────────────────────────────────────────
+const CONFIRM_WORDS = ["yes", "correct", "looks good", "looks right", "generate", "sure", "go ahead", "yep", "yeah", "perfect", "confirm"];
+function isConfirmation(text: string) {
+  const t = text.toLowerCase();
+  return CONFIRM_WORDS.some((w) => t.includes(w));
+}
+
+// ─── Typing Indicator ─────────────────────────────────────────────────────────
+const GENERATING_MESSAGES = [
+  "Analyzing your project...",
+  "Calculating materials...",
+  "Checking Home Depot pricing...",
+  "Building your estimate...",
+  "Applying 15% buffer...",
+  "Generating scope of work...",
+  "Almost ready...",
+];
+
+function TypingIndicator({ generating }: { generating: boolean }) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    if (!generating) return;
+    const t = setInterval(() => setIdx((i) => (i + 1) % GENERATING_MESSAGES.length), 2000);
+    return () => clearInterval(t);
+  }, [generating]);
+
+  if (!generating) {
+    return (
+      <div className="bg-secondary/60 border border-border rounded-xl px-4 py-3 inline-flex items-center gap-1.5">
+        <span className="typing-dot" />
+        <span className="typing-dot" />
+        <span className="typing-dot" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-secondary/60 border border-orange/40 rounded-xl px-4 py-3 inline-flex items-start gap-3 max-w-[85%]">
+      <div className="h-7 w-7 rounded-full bg-gradient-orange flex items-center justify-center text-background font-black text-xs flex-shrink-0">
+        M
+      </div>
+      <div>
+        <div className="flex items-center gap-1.5 mb-1.5 h-3">
+          <span className="typing-dot" />
+          <span className="typing-dot" />
+          <span className="typing-dot" />
+        </div>
+        <p className="text-xs text-muted-foreground transition-opacity duration-300">
+          {GENERATING_MESSAGES[idx]}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Progress Steps ───────────────────────────────────────────────────────────
+const STEP_LABELS = ["Your Info", "Project Details", "Measurements", "Confirm", "Estimate Ready"];
+
+function computeStep(messages: Msg[], hasProject: boolean): number {
+  if (hasProject) return 5;
+  const userMsgs = messages.filter((m) => m.role === "user");
+  const allText = userMsgs.map((m) => m.content).join(" \n ").toLowerCase();
+  let step = 0;
+  // Step 1: name + address
+  const hasName = /\b[a-z]{2,}\s+[a-z]{2,}\b/i.test(allText);
+  const hasAddress = /\d+\s+\w+|street|st\.|ave|road|rd\.|blvd|lane|ln\.|drive|dr\.|\b\d{5}\b/i.test(allText);
+  if (hasName && hasAddress) step = 1;
+  // Step 2: project description (a longer message)
+  if (step >= 1 && userMsgs.some((m) => m.content.length > 25)) step = 2;
+  // Step 3: measurements
+  if (step >= 2 && /\d+\s*(ft|feet|sq|x|by|'|ft\.)/i.test(allText)) step = 3;
+  // Step 4: confirmation
+  if (step >= 3 && userMsgs.some((m) => isConfirmation(m.content))) step = 4;
+  return step;
+}
+
+function ProgressSteps({ current }: { current: number }) {
+  return (
+    <div className="flex items-center justify-between mb-8 px-2 max-w-3xl mx-auto">
+      {STEP_LABELS.map((label, i) => {
+        const done = i < current;
+        const active = i === current;
+        return (
+          <div key={i} className="flex items-center flex-1 last:flex-none">
+            <div className="flex flex-col items-center gap-2">
+              <div
+                className={[
+                  "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-all",
+                  done
+                    ? "bg-orange text-background border-2 border-orange"
+                    : active
+                      ? "bg-transparent text-orange border-2 border-orange step-pulse"
+                      : "bg-transparent text-muted-foreground border-2 border-border",
+                ].join(" ")}
+              >
+                {done ? <Check className="h-4 w-4" /> : i + 1}
+              </div>
+              <span
+                className="text-[11px] font-medium text-center whitespace-nowrap"
+                style={{ color: done || active ? "var(--orange)" : "var(--muted-foreground)" }}
+              >
+                {label}
+              </span>
+            </div>
+            {i < STEP_LABELS.length - 1 && (
+              <div
+                className={[
+                  "flex-1 h-0.5 mx-2 -mt-6 transition-colors",
+                  done ? "bg-orange" : "bg-border",
+                ].join(" ")}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Quick Start Prompts ──────────────────────────────────────────────────────
+const QUICK_PROMPTS = [
+  { icon: Wrench, title: "🔧 Interior Renovation", subtitle: "Flooring, drywall, painting", text: "I need help with an interior renovation" },
+  { icon: Home, title: "🏠 Exterior Work", subtitle: "Siding, roofing, gutters", text: "I need exterior work done on my house" },
+  { icon: TreePine, title: "🪵 Deck & Outdoor", subtitle: "Deck, railings, stairs", text: "I need deck work and outdoor improvements" },
+  { icon: Hammer, title: "🔨 Handyman & Repairs", subtitle: "Multiple small fixes and repairs", text: "I have several repairs and handyman work needed" },
+];
+
+// ─── Confetti ─────────────────────────────────────────────────────────────────
+function Confetti() {
+  const pieces = Array.from({ length: 26 });
+  return (
+    <div className="pointer-events-none absolute inset-x-0 top-0 h-0 overflow-visible">
+      {pieces.map((_, i) => {
+        const left = Math.random() * 100;
+        const cx = (Math.random() - 0.5) * 160;
+        const delay = Math.random() * 0.2;
+        const isOrange = i % 2 === 0;
+        return (
+          <span
+            key={i}
+            className="confetti-piece"
+            style={{
+              left: `${left}%`,
+              backgroundColor: isOrange ? "var(--orange)" : "#FFFFFF",
+              animationDelay: `${delay}s`,
+              ["--cx" as string]: `${cx}px`,
+            } as React.CSSProperties}
+          />
+        );
+      })}
+    </div>
+  );
+}
 
 // ─── Payment Schedule ─────────────────────────────────────────────────────────
 function calcPayments(total: number, deposit: number) {
