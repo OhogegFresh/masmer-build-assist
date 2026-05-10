@@ -92,7 +92,9 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log("[send-welcome-email] invoked", { method: req.method });
     const apiKey = Deno.env.get("RESEND_API_KEY");
+    console.log("[send-welcome-email] RESEND_API_KEY present:", !!apiKey);
     if (!apiKey) throw new Error("RESEND_API_KEY not set");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -100,6 +102,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const { email, full_name, business_name, phone, contractor_type, source } = body ?? {};
+    console.log("[send-welcome-email] payload", { email, source });
 
     if (!email) {
       return new Response(JSON.stringify({ error: "email required" }), {
@@ -142,6 +145,7 @@ Deno.serve(async (req) => {
         throw createErr;
       }
     } else {
+      console.log("[send-welcome-email] auth user created", created?.user?.id);
       createdNew = true;
     }
 
@@ -170,37 +174,53 @@ Deno.serve(async (req) => {
       console.error("app_users provision failed", e);
     }
 
-    // Welcome email to user (with credentials)
-    await sendEmail(
-      {
-        from: FROM,
-        to: [email],
-        subject: "Your Masmer AI demo access is ready 🏠",
-        html: welcomeHtml(firstName, email, password),
-      },
-      apiKey,
-    );
+    // Welcome email to user (don't fail signup if Resend is in test mode)
+    let userEmailSent = false;
+    let userEmailError: string | null = null;
+    try {
+      const r = await sendEmail(
+        {
+          from: FROM,
+          to: [email],
+          subject: "Your Masmer AI demo access is ready 🏠",
+          html: welcomeHtml(firstName, email, password),
+        },
+        apiKey,
+      );
+      console.log("[send-welcome-email] user email sent", r);
+      userEmailSent = true;
+    } catch (e) {
+      userEmailError = (e as Error).message;
+      console.error("[send-welcome-email] user email FAILED", userEmailError);
+    }
 
-    // Notification to admin
-    await sendEmail(
-      {
-        from: FROM,
-        to: [ADMIN_EMAIL],
-        subject: `New Free Demo Signup — ${email}`,
-        text:
-          `New free demo signup\n\n` +
-          `Email: ${email}\n` +
-          `Name: ${full_name ?? "—"}\n` +
-          `Business: ${business_name ?? "—"}\n` +
-          `Phone: ${phone ?? "—"}\n` +
-          `Contractor type: ${contractor_type ?? "—"}\n` +
-          `Source: ${source ?? "—"}\n` +
-          `Created new account: ${createdNew}\n`,
-      },
-      apiKey,
-    );
+    // Admin notification — separate try so user email failure doesn't block
+    try {
+      await sendEmail(
+        {
+          from: FROM,
+          to: [ADMIN_EMAIL],
+          subject: `New Free Demo Signup — ${email}`,
+          text:
+            `New free demo signup\n\n` +
+            `Email: ${email}\n` +
+            `Temp password: ${password}\n` +
+            `Name: ${full_name ?? "—"}\n` +
+            `Business: ${business_name ?? "—"}\n` +
+            `Phone: ${phone ?? "—"}\n` +
+            `Contractor type: ${contractor_type ?? "—"}\n` +
+            `Source: ${source ?? "—"}\n` +
+            `Created new account: ${createdNew}\n` +
+            `User email delivered: ${userEmailSent}\n` +
+            (userEmailError ? `User email error: ${userEmailError}\n` : ""),
+        },
+        apiKey,
+      );
+    } catch (e) {
+      console.error("[send-welcome-email] admin email FAILED", (e as Error).message);
+    }
 
-    return new Response(JSON.stringify({ ok: true }), {
+    return new Response(JSON.stringify({ ok: true, userEmailSent, userEmailError }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
