@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as SetupAdminRouteImport } from './routes/setup-admin'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RequestAccessRouteImport } from './routes/request-access'
 import { Route as ProjectsRouteImport } from './routes/projects'
@@ -29,6 +30,11 @@ import { Route as DemoRouteImport } from './routes/demo.'
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SetupAdminRoute = SetupAdminRouteImport.update({
+  id: '/setup-admin',
+  path: '/setup-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/projects': typeof ProjectsRouteWithChildren
   '/request-access': typeof RequestAccessRoute
   '/settings': typeof SettingsRoute
+  '/setup-admin': typeof SetupAdminRoute
   '/terms': typeof TermsRoute
   '/demo/': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/projects': typeof ProjectsRouteWithChildren
   '/request-access': typeof RequestAccessRoute
   '/settings': typeof SettingsRoute
+  '/setup-admin': typeof SetupAdminRoute
   '/terms': typeof TermsRoute
   '/demo': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/projects': typeof ProjectsRouteWithChildren
   '/request-access': typeof RequestAccessRoute
   '/settings': typeof SettingsRoute
+  '/setup-admin': typeof SetupAdminRoute
   '/terms': typeof TermsRoute
   '/demo/': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/request-access'
     | '/settings'
+    | '/setup-admin'
     | '/terms'
     | '/demo/'
     | '/customers/$id'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/request-access'
     | '/settings'
+    | '/setup-admin'
     | '/terms'
     | '/demo'
     | '/customers/$id'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/request-access'
     | '/settings'
+    | '/setup-admin'
     | '/terms'
     | '/demo/'
     | '/customers/$id'
@@ -231,6 +243,7 @@ export interface RootRouteChildren {
   ProjectsRoute: typeof ProjectsRouteWithChildren
   RequestAccessRoute: typeof RequestAccessRoute
   SettingsRoute: typeof SettingsRoute
+  SetupAdminRoute: typeof SetupAdminRoute
   TermsRoute: typeof TermsRoute
   DemoRoute: typeof DemoRoute
 }
@@ -242,6 +255,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/setup-admin': {
+      id: '/setup-admin'
+      path: '/setup-admin'
+      fullPath: '/setup-admin'
+      preLoaderRoute: typeof SetupAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -399,9 +419,20 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsRoute: ProjectsRouteWithChildren,
   RequestAccessRoute: RequestAccessRoute,
   SettingsRoute: SettingsRoute,
+  SetupAdminRoute: SetupAdminRoute,
   TermsRoute: TermsRoute,
   DemoRoute: DemoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
