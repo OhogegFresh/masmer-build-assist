@@ -6,7 +6,6 @@ import { Features } from "@/components/masmer/Features";
 import { EstimatingBot } from "@/components/masmer/EstimatingBot";
 import { HowItWorks } from "@/components/masmer/HowItWorks";
 import { SocialProof } from "@/components/masmer/SocialProof";
-import { Pricing } from "@/components/masmer/Pricing";
 import { Waitlist } from "@/components/masmer/Waitlist";
 import { Footer } from "@/components/masmer/Footer";
 
@@ -41,7 +40,6 @@ function Index() {
         <EstimatingBot />
         <HowItWorks />
         <SocialProof />
-        <Pricing />
         <Waitlist />
       </main>
       <Footer />

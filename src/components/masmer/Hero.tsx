@@ -37,7 +37,7 @@ export function Hero() {
           </Link>
           <a
             href="#how"
-            className="inline-flex items-center gap-2 rounded-md border border-orange/60 px-6 py-3.5 text-sm font-bold text-orange hover:bg-orange/10 transition-colors"
+            className="inline-flex items-center gap-2 px-2 py-3.5 text-sm font-semibold text-muted-foreground hover:text-orange transition-colors"
           >
             <PlayCircle className="h-4 w-4" />
             See How It Works
