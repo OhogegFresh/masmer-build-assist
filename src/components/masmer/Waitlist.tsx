@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { z } from "zod";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Reveal } from "./Reveal";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, Mail, Phone } from "lucide-react";
 
 const schema = z.object({
   full_name: z.string().trim().min(2, "Enter your name").max(100),
@@ -39,6 +40,9 @@ export function Waitlist() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<{ email: string; phone: string } | null>(
+    null,
+  );
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -57,8 +61,13 @@ export function Waitlist() {
     setSubmitting(false);
     if (dbError) {
       setError("Something went wrong. Please try again.");
+      toast.error("Submission failed. Please try again.");
       return;
     }
+    setSaved({ email: parsed.data.email, phone: parsed.data.phone });
+    toast.success("You're on the waitlist!", {
+      description: `Saved ${parsed.data.email}`,
+    });
     setDone(true);
   }
 
@@ -80,13 +89,30 @@ export function Waitlist() {
           </div>
         </Reveal>
         <Reveal>
-          {done ? (
+          {done && saved ? (
             <div className="rounded-2xl border border-gold/40 bg-card p-10 text-center shadow-gold">
               <CheckCircle2 className="mx-auto h-12 w-12 text-gold" />
               <h3 className="mt-4 text-2xl font-black">You're on the list.</h3>
               <p className="mt-2 text-muted-foreground">
                 We'll reach out within 24 hours to set up your AI agents.
               </p>
+              <div className="mt-6 rounded-xl border border-border bg-background/60 p-5 text-left">
+                <p className="text-xs uppercase tracking-widest text-gold font-bold mb-3">
+                  Saved to our database
+                </p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-3">
+                    <Mail className="h-4 w-4 text-gold shrink-0" />
+                    <span className="text-muted-foreground">Email:</span>
+                    <span className="font-mono text-foreground break-all">{saved.email}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Phone className="h-4 w-4 text-gold shrink-0" />
+                    <span className="text-muted-foreground">Phone:</span>
+                    <span className="font-mono text-foreground">{saved.phone}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <form
