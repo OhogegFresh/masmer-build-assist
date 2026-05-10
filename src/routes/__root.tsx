@@ -11,6 +11,7 @@ import {
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
 import { DemoProvider, DemoBanner } from "@/components/masmer/DemoContext";
+import { AuthProvider } from "@/components/masmer/AuthContext";
 
 function NotFoundComponent() {
   return (
@@ -119,11 +120,13 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <DemoProvider>
-        <DemoBanner />
-        <Outlet />
-        <Toaster />
-      </DemoProvider>
+      <AuthProvider>
+        <DemoProvider>
+          <DemoBanner />
+          <Outlet />
+          <Toaster />
+        </DemoProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
