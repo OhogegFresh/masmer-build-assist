@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Search, LogOut, ShieldAlert } from "lucide-react";
+import { Loader2, Search, LogOut, ShieldAlert, Copy, Ban, CalendarPlus } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin")({
@@ -27,6 +27,19 @@ type Row = {
   demo_expires_at: string | null;
 };
 
+type DemoInviteRow = {
+  id: string;
+  invite_code: string;
+  invitee_name: string | null;
+  invitee_email: string | null;
+  invitee_company: string | null;
+  expires_at: string;
+  activated_at: string | null;
+  is_active: boolean;
+  page_views: number;
+  last_seen: string | null;
+};
+
 function AdminPage() {
   const navigate = useNavigate();
   const [authChecked, setAuthChecked] = useState(false);
@@ -38,6 +51,10 @@ function AdminPage() {
   const [contractorType, setContractorType] = useState("");
   const [feature, setFeature] = useState("");
   const [extending, setExtending] = useState<string | null>(null);
+  const [tab, setTab] = useState<"waitlist" | "demos">("waitlist");
+  const [demos, setDemos] = useState<DemoInviteRow[]>([]);
+  const [demosLoading, setDemosLoading] = useState(true);
+  const [demoBusy, setDemoBusy] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -84,6 +101,52 @@ function AdminPage() {
       setLoading(false);
     })();
   }, [authed]);
+
+  useEffect(() => {
+    if (!authed) return;
+    (async () => {
+      setDemosLoading(true);
+      const { data } = await (supabase as any)
+        .from("demo_invites")
+        .select("*")
+        .order("created_at", { ascending: false });
+      setDemos((data as DemoInviteRow[]) ?? []);
+      setDemosLoading(false);
+    })();
+  }, [authed]);
+
+  async function extendDemo(row: DemoInviteRow) {
+    setDemoBusy(row.id);
+    const base = new Date(row.expires_at) > new Date() ? new Date(row.expires_at) : new Date();
+    const next = new Date(base.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const { error } = await (supabase as any)
+      .from("demo_invites")
+      .update({ expires_at: next.toISOString(), is_active: true })
+      .eq("id", row.id);
+    setDemoBusy(null);
+    if (error) return toast.error("Failed to extend");
+    setDemos((ds) => ds.map((d) => (d.id === row.id ? { ...d, expires_at: next.toISOString(), is_active: true } : d)));
+    toast.success("Extended 7 more days");
+  }
+
+  async function revokeDemo(row: DemoInviteRow) {
+    setDemoBusy(row.id);
+    const { error } = await (supabase as any)
+      .from("demo_invites")
+      .update({ is_active: false })
+      .eq("id", row.id);
+    setDemoBusy(null);
+    if (error) return toast.error("Failed to revoke");
+    setDemos((ds) => ds.map((d) => (d.id === row.id ? { ...d, is_active: false } : d)));
+    toast.success("Demo revoked");
+  }
+
+  function copyDemoLink(row: DemoInviteRow) {
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://masmer-build-assist.lovable.app";
+    const url = `${origin}/demo/${row.invite_code}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Link copied");
+  }
 
   const types = useMemo(
     () => Array.from(new Set(rows.map((r) => r.contractor_type))).sort(),
@@ -183,6 +246,23 @@ function AdminPage() {
           </div>
         ) : (
           <>
+            <div className="mb-6 flex gap-2 border-b border-border">
+              <button
+                onClick={() => setTab("waitlist")}
+                className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors ${tab === "waitlist" ? "border-orange text-orange" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+              >
+                Waitlist Signups
+              </button>
+              <button
+                onClick={() => setTab("demos")}
+                className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors ${tab === "demos" ? "border-orange text-orange" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+              >
+                Demo Invites
+              </button>
+            </div>
+
+            {tab === "waitlist" && (
+            <>
             <div className="grid gap-3 md:grid-cols-4 mb-6">
               <div className="md:col-span-2 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
