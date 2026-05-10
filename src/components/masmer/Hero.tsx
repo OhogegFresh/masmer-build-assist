@@ -1,4 +1,5 @@
 import { ArrowRight, PlayCircle } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 export function Hero() {
   return (
@@ -28,13 +29,13 @@ export function Hero() {
           can stay on the job site.
         </p>
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <a
-            href="#contact"
+          <Link
+            to="/estimate"
             className="group inline-flex items-center gap-2 rounded-md bg-gradient-gold px-6 py-3.5 text-sm font-bold text-background shadow-gold hover:scale-[1.02] transition-transform"
           >
-            Get Early Access
+            Try the Estimating Bot Free
             <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-          </a>
+          </Link>
           <a
             href="#how"
             className="inline-flex items-center gap-2 rounded-md border border-gold/60 px-6 py-3.5 text-sm font-bold text-gold hover:bg-gold/10 transition-colors"
