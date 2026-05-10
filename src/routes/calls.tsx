@@ -379,6 +379,14 @@ function CallsPage() {
         </SheetContent>
       </Sheet>
 
+      <CustomerLeadPipe
+        open={!!pipeCall}
+        onClose={() => setPipeCall(null)}
+        customerName={pipeCall?.caller_name ?? "Unknown"}
+        phone={pipeCall?.caller_phone ?? null}
+        address={pipeCall?.job_address ?? null}
+      />
+
       <Dialog open={!!convertCall} onOpenChange={(o) => !o && !creating && setConvertCall(null)}>
         <DialogContent className="bg-card border-border sm:max-w-lg">
           <DialogHeader>
