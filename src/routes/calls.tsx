@@ -292,7 +292,7 @@ function CallsPage() {
                 </div>
 
                 <button
-                  onClick={() => setOpenCall(c)}
+                  onClick={() => setPipeCall(c)}
                   className="mt-auto inline-flex items-center justify-center rounded-md border border-orange/60 px-4 py-2 text-sm font-bold text-orange hover:bg-orange/10 transition-colors"
                 >
                   View Details
