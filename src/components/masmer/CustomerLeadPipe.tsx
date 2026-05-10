@@ -26,6 +26,9 @@ import {
   Calendar,
   PhoneCall,
   FolderKanban,
+  Copy,
+  Check,
+  RefreshCw,
 } from "lucide-react";
 
 export interface CustomerLeadPipeProps {
@@ -87,6 +90,10 @@ export function CustomerLeadPipe({ open, onClose, customerName, phone, address }
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [followupOpen, setFollowupOpen] = useState(false);
+  const [followupLoading, setFollowupLoading] = useState(false);
+  const [followupError, setFollowupError] = useState<string | null>(null);
+  const [followup, setFollowup] = useState<{ sms: string; email: { subject: string; body: string } } | null>(null);
+  const [copied, setCopied] = useState<"sms" | "email" | null>(null);
 
   useEffect(() => {
     if (!open || !customerName) return;
@@ -121,6 +128,47 @@ export function CustomerLeadPipe({ open, onClose, customerName, phone, address }
       cancelled = true;
     };
   }, [open, customerName, phone]);
+
+  async function generateFollowup() {
+    setFollowupLoading(true);
+    setFollowupError(null);
+    setFollowup(null);
+    try {
+      const latestCall = calls[0];
+      const latestProject = projects[0];
+      const { data, error } = await supabase.functions.invoke("generate-followup", {
+        body: {
+          customer_name: customerName,
+          call_summary: latestCall?.ai_summary ?? null,
+          project_title: latestProject?.project_title ?? null,
+          project_status: latestProject?.status ?? null,
+          last_call_date: latestCall?.created_at ?? null,
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setFollowup(data as any);
+    } catch (e: any) {
+      setFollowupError(e?.message ?? "Failed to generate follow-up");
+    } finally {
+      setFollowupLoading(false);
+    }
+  }
+
+  function openFollowup() {
+    setFollowupOpen(true);
+    if (!followup && !followupLoading) generateFollowup();
+  }
+
+  async function copyText(text: string, which: "sms" | "email") {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(which);
+      setTimeout(() => setCopied(null), 1500);
+    } catch {
+      /* ignore */
+    }
+  }
 
   return (
     <>
@@ -294,7 +342,7 @@ export function CustomerLeadPipe({ open, onClose, customerName, phone, address }
               New Estimate
             </Link>
             <button
-              onClick={() => setFollowupOpen(true)}
+              onClick={openFollowup}
               className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-md bg-gradient-orange px-4 py-2.5 text-sm font-bold text-foreground shadow-orange hover:scale-[1.02] transition-transform"
             >
               <Sparkles className="h-4 w-4" />
@@ -305,20 +353,76 @@ export function CustomerLeadPipe({ open, onClose, customerName, phone, address }
       </Sheet>
 
       <Dialog open={followupOpen} onOpenChange={setFollowupOpen}>
-        <DialogContent className="bg-card border-border">
+        <DialogContent className="bg-card border-border max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-display flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-orange" />
               AI Follow-up
             </DialogTitle>
             <DialogDescription>
-              AI-generated follow-up for {customerName} — coming next.
+              AI-generated follow-up for {customerName}.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-8 flex flex-col items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin text-orange" />
-            <p className="text-sm">Follow-up generator will be wired up next.</p>
-          </div>
+
+          {followupLoading ? (
+            <div className="py-10 flex flex-col items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin text-orange" />
+              <p className="text-sm">Generating follow-up…</p>
+            </div>
+          ) : followupError ? (
+            <div className="py-6 space-y-3">
+              <p className="text-sm text-red-400">{followupError}</p>
+              <button
+                onClick={generateFollowup}
+                className="inline-flex items-center gap-1.5 rounded-md border border-orange/60 px-3 py-1.5 text-sm font-bold text-orange hover:bg-orange/10"
+              >
+                <RefreshCw className="h-3.5 w-3.5" /> Try again
+              </button>
+            </div>
+          ) : followup ? (
+            <div className="space-y-4">
+              {/* SMS */}
+              <div className="rounded-lg border border-border bg-background p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">SMS / WhatsApp</span>
+                  <button
+                    onClick={() => copyText(followup.sms, "sms")}
+                    className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-[11px] font-bold text-orange hover:bg-orange/10"
+                  >
+                    {copied === "sms" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                    {copied === "sms" ? "Copied" : "Copy SMS"}
+                  </button>
+                </div>
+                <p className="text-sm text-foreground/90 whitespace-pre-wrap">{followup.sms}</p>
+                <div className="mt-1 text-[10px] text-muted-foreground">{followup.sms.length} chars</div>
+              </div>
+
+              {/* Email */}
+              <div className="rounded-lg border border-border bg-background p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Email</span>
+                  <button
+                    onClick={() => copyText(`Subject: ${followup.email.subject}\n\n${followup.email.body}`, "email")}
+                    className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-[11px] font-bold text-orange hover:bg-orange/10"
+                  >
+                    {copied === "email" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                    {copied === "email" ? "Copied" : "Copy Email"}
+                  </button>
+                </div>
+                <div className="text-sm font-bold mb-1.5">{followup.email.subject}</div>
+                <p className="text-sm text-foreground/90 whitespace-pre-wrap">{followup.email.body}</p>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={generateFollowup}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-orange/60 px-3 py-1.5 text-sm font-bold text-orange hover:bg-orange/10"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" /> Regenerate
+                </button>
+              </div>
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
     </>
