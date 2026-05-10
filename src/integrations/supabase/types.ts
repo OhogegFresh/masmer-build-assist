@@ -192,6 +192,9 @@ export type Database = {
           business_name: string
           contractor_type: string
           created_at: string
+          demo_access: boolean
+          demo_expires_at: string
+          demo_link: string
           email: string
           feature_interest: string
           full_name: string
@@ -202,6 +205,9 @@ export type Database = {
           business_name: string
           contractor_type: string
           created_at?: string
+          demo_access?: boolean
+          demo_expires_at?: string
+          demo_link?: string
           email: string
           feature_interest: string
           full_name: string
@@ -212,6 +218,9 @@ export type Database = {
           business_name?: string
           contractor_type?: string
           created_at?: string
+          demo_access?: boolean
+          demo_expires_at?: string
+          demo_link?: string
           email?: string
           feature_interest?: string
           full_name?: string
