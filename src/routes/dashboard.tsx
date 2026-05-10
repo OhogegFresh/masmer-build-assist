@@ -7,6 +7,8 @@ import { useDemo } from "@/components/masmer/DemoContext";
 import { VapiCard } from "@/components/masmer/VapiCard";
 import { OnboardingWizard, hasCompletedOnboarding } from "@/components/masmer/OnboardingWizard";
 import { Plus, FolderKanban, DollarSign, Clock, Sparkles, Loader2, PhoneIncoming, Copy, Check } from "lucide-react";
+import { CalendarDays, Navigation } from "lucide-react";
+import { ScheduledJob, fmtTime, todayISO, singleMapsUrl } from "@/components/masmer/planner/types";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
@@ -103,6 +105,7 @@ function DashboardPage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [selectedCall, setSelectedCall] = useState<CallRow | null>(null);
   const [copied, setCopied] = useState(false);
+  const [todayJobs, setTodayJobs] = useState<ScheduledJob[]>([]);
 
   useEffect(() => {
     if (!ready) return;
@@ -131,6 +134,14 @@ function DashboardPage() {
         .order("created_at", { ascending: false })
         .limit(3);
       if (!cancelled) setCalls((callsData ?? []) as CallRow[]);
+
+      const { data: jobsData } = await (supabase as any)
+        .from("scheduled_jobs")
+        .select("*")
+        .eq("scheduled_date", todayISO())
+        .order("start_time")
+        .limit(3);
+      if (!cancelled) setTodayJobs((jobsData ?? []) as ScheduledJob[]);
 
       setLoading(false);
 
