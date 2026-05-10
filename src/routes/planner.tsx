@@ -103,7 +103,7 @@ function PlannerPage() {
       ? "No jobs scheduled for today. Click 'Add Job' to get started or check your projects for pending work."
       : `You have ${todayJobs.length} job${todayJobs.length === 1 ? "" : "s"} scheduled today starting at ${fmtTime(
           todayJobs[0].start_time,
-        )}. Estimated total job time is ${(totalMinutes / 60).toFixed(1)} hours plus approximately ${totalDrive} minutes of driving. Your first stop is ${todayJobs[0].customer_name}${todayJobs[0].job_address ? ` at ${todayJobs[0].job_address}` : ""}.`;
+    )}. Estimated total job time is ${(totalMinutes / 60).toFixed(1)} hours plus roughly ${totalDrive} minutes of driving (estimated). Your first stop is ${todayJobs[0].customer_name}${todayJobs[0].job_address ? ` at ${todayJobs[0].job_address}` : ""}.`;
 
   return (
     <AppShell
@@ -237,7 +237,7 @@ function PlannerPage() {
                       <div className="flex items-center gap-2 ml-3 mb-2 text-[11px] text-muted-foreground">
                         <div className="w-px h-4 bg-border" />
                         <span>
-                          {dmin} min • {miles.toFixed(1)} mi
+                          {dmin} min (est.) • {miles.toFixed(1)} mi
                         </span>
                       </div>
                     )}
@@ -285,7 +285,7 @@ function PlannerPage() {
           {todayJobs.length > 0 && (
             <div className="mt-5 pt-4 border-t border-border space-y-1.5 text-xs">
               <div className="flex justify-between text-muted-foreground">
-                <span>Total drive time</span>
+                <span>Total drive time (est.)</span>
                 <span className="font-bold text-foreground">{totalDrive} min</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
