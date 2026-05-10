@@ -238,9 +238,13 @@ function PlannerPage() {
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
+      <div className={`grid gap-5 ${view === "month" ? "" : "lg:grid-cols-[2fr_1fr]"}`}>
         {/* Calendar */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden hidden md:block">
+        <div
+          className={`rounded-xl border border-border bg-card overflow-hidden ${
+            view === "month" ? "block" : "hidden md:block"
+          }`}
+        >
           {view === "day" ? (
             <DayCalendar
               jobs={todayJobs}
@@ -273,7 +277,8 @@ function PlannerPage() {
           )}
         </div>
 
-        {/* Today's jobs sidebar */}
+        {/* Today's jobs sidebar — hidden in month view */}
+        {view !== "month" && (
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-start justify-between mb-4">
             <div>
@@ -380,9 +385,11 @@ function PlannerPage() {
             </div>
           )}
         </div>
+        )}
       </div>
 
-      {/* Mobile vertical list */}
+      {/* Mobile vertical list — hidden in month view (month grid renders on all sizes) */}
+      {view !== "month" && (
       <div className="md:hidden mt-5 space-y-3">
         {todayJobs.map((j) => (
           <div key={j.id} className={`rounded-lg border border-border bg-card p-3 border-l-4 ${STATUS_BORDER[j.status]}`}>
@@ -409,6 +416,7 @@ function PlannerPage() {
           </div>
         ))}
       </div>
+      )}
 
       {/* Mobile FAB */}
       <button
