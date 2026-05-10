@@ -218,7 +218,12 @@ function DashboardPage() {
           </div>
           <div className="divide-y divide-border">
             {calls.map((c) => (
-              <div key={c.id} className="px-5 py-4">
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => { setSelectedCall(c); setCopied(false); }}
+                className="w-full text-left px-5 py-4 hover:bg-muted/30 transition-colors focus:outline-none focus:bg-muted/40"
+              >
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div className="min-w-0">
                     <div className="font-semibold">{c.caller_name ?? "Unknown caller"}</div>
@@ -239,11 +244,84 @@ function DashboardPage() {
                 {c.ai_summary && (
                   <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{c.ai_summary}</p>
                 )}
-              </div>
+              </button>
             ))}
           </div>
         </div>
       )}
+
+      <Sheet open={!!selectedCall} onOpenChange={(o) => !o && setSelectedCall(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto bg-card border-border">
+          {selectedCall && (
+            <>
+              <SheetHeader className="text-left">
+                <SheetTitle className="font-display text-2xl flex items-center gap-2">
+                  <PhoneIncoming className="h-5 w-5 text-orange" />
+                  {selectedCall.caller_name ?? "Unknown caller"}
+                </SheetTitle>
+                <SheetDescription className="font-mono text-xs">
+                  {selectedCall.caller_phone} · {fmtDuration(selectedCall.call_duration)} · {new Date(selectedCall.created_at).toLocaleString()}
+                </SheetDescription>
+              </SheetHeader>
+
+              <div className="mt-6 flex flex-wrap gap-2">
+                {selectedCall.job_type && (
+                  <span className="rounded-full border border-orange/40 text-orange px-2 py-0.5 text-xs">{selectedCall.job_type}</span>
+                )}
+                {selectedCall.estimated_budget && (
+                  <span className="rounded-full border border-border px-2 py-0.5 text-xs">{selectedCall.estimated_budget}</span>
+                )}
+                {selectedCall.lead_status === "booked" ? (
+                  <span className="rounded-full bg-green-500/15 text-green-400 border border-green-500/40 px-2 py-0.5 text-xs font-semibold">Booked</span>
+                ) : (
+                  <span className="rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/40 px-2 py-0.5 text-xs font-semibold">{selectedCall.lead_status ?? "new"}</span>
+                )}
+              </div>
+
+              {selectedCall.job_address && (
+                <div className="mt-4 text-sm">
+                  <span className="text-muted-foreground">Address: </span>
+                  <span>{selectedCall.job_address}</span>
+                </div>
+              )}
+
+              <div className="mt-6">
+                <h3 className="font-display text-sm uppercase tracking-wider text-muted-foreground mb-2">AI Summary</h3>
+                <div className="rounded-lg border border-border bg-background/50 p-4 text-sm whitespace-pre-wrap">
+                  {selectedCall.ai_summary || <span className="text-muted-foreground italic">No summary available.</span>}
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-display text-sm uppercase tracking-wider text-muted-foreground">Transcript</h3>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const text = `Caller: ${selectedCall.caller_name ?? "Unknown"} (${selectedCall.caller_phone ?? ""})\nDate: ${new Date(selectedCall.created_at).toLocaleString()}\nDuration: ${fmtDuration(selectedCall.call_duration)}\n\n--- AI SUMMARY ---\n${selectedCall.ai_summary ?? "(none)"}\n\n--- TRANSCRIPT ---\n${selectedCall.transcript ?? "(none)"}`;
+                      try {
+                        await navigator.clipboard.writeText(text);
+                        setCopied(true);
+                        toast.success("Copied to clipboard");
+                        setTimeout(() => setCopied(false), 2000);
+                      } catch {
+                        toast.error("Failed to copy");
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-orange/40 text-orange px-3 py-1.5 text-xs font-semibold hover:bg-orange/10 transition-colors"
+                  >
+                    {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copied ? "Copied" : "Copy all"}
+                  </button>
+                </div>
+                <div className="rounded-lg border border-border bg-background/50 p-4 text-sm whitespace-pre-wrap font-mono max-h-[40vh] overflow-y-auto">
+                  {selectedCall.transcript || <span className="text-muted-foreground italic font-sans">No transcript available.</span>}
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
 
       <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
