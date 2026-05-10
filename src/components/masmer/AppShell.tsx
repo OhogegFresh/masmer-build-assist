@@ -8,10 +8,11 @@ import {
   Menu,
   LogOut,
   Settings,
+  ShieldCheck,
+  ChevronUp,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useState, useRef, useEffect, type ReactNode } from "react";
+import { useAuth } from "./AuthContext";
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -23,13 +24,27 @@ const nav = [
 
 export function AppShell({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { appUser, isAdmin, signOut } = useAuth();
 
-  async function signOut() {
-    await supabase.auth.signOut();
-    toast.success("Signed out");
-    window.location.href = "/login";
-  }
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    if (menuOpen) document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [menuOpen]);
+
+  const initials = (appUser?.full_name ?? appUser?.email ?? "U")
+    .split(/\s+/).map((s) => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+  const roleLabel = appUser?.role === "admin" ? "Admin" : appUser?.role === "demo" ? "Demo" : "User";
+  const roleClass = appUser?.role === "admin"
+    ? "bg-orange/15 text-orange border-orange/30"
+    : appUser?.role === "demo"
+    ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
+    : "bg-secondary text-muted-foreground border-border";
 
   const SidebarBody = (
     <div className="flex h-full flex-col bg-background border-r border-border">
@@ -57,13 +72,39 @@ export function AppShell({ title, action, children }: { title: string; action?: 
           );
         })}
       </nav>
-      <div className="p-3 border-t border-border">
-        <button
-          onClick={signOut}
-          className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign out
+      <div className="p-3 border-t border-border relative" ref={menuRef}>
+        {menuOpen && (
+          <div className="absolute bottom-full left-3 right-3 mb-2 rounded-lg border border-border bg-card shadow-lg overflow-hidden">
+            <Link to="/settings" onClick={() => { setMenuOpen(false); setOpen(false); }}
+              className="flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-secondary">
+              <Settings className="h-4 w-4" /> My Settings
+            </Link>
+            {isAdmin && (
+              <Link to="/admin" onClick={() => { setMenuOpen(false); setOpen(false); }}
+                className="flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-secondary">
+                <ShieldCheck className="h-4 w-4" /> Admin Panel
+              </Link>
+            )}
+            <div className="h-px bg-border" />
+            <button onClick={() => { setMenuOpen(false); signOut(); }}
+              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-secondary text-left">
+              <LogOut className="h-4 w-4" /> Sign Out
+            </button>
+          </div>
+        )}
+        <button onClick={() => setMenuOpen((m) => !m)}
+          className="w-full flex items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-secondary transition-colors">
+          <div className="h-9 w-9 rounded-full bg-orange flex items-center justify-center text-white font-bold text-sm shrink-0">
+            {initials}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-semibold truncate">{appUser?.full_name ?? "User"}</span>
+              <span className={`shrink-0 rounded-full border px-1.5 py-0 text-[10px] font-bold uppercase tracking-wider ${roleClass}`}>{roleLabel}</span>
+            </div>
+            <div className="text-xs text-muted-foreground truncate">{appUser?.business_name ?? appUser?.email ?? "—"}</div>
+          </div>
+          <ChevronUp className={`h-4 w-4 text-muted-foreground transition-transform ${menuOpen ? "" : "rotate-180"}`} />
         </button>
       </div>
     </div>
