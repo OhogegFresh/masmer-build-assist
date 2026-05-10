@@ -14,6 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_requests: {
+        Row: {
+          approved_by: string | null
+          business_name: string | null
+          business_type: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          message: string | null
+          phone: string | null
+          referral_source: string | null
+          reviewed_at: string | null
+          status: string
+        }
+        Insert: {
+          approved_by?: string | null
+          business_name?: string | null
+          business_type?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          message?: string | null
+          phone?: string | null
+          referral_source?: string | null
+          reviewed_at?: string | null
+          status?: string
+        }
+        Update: {
+          approved_by?: string | null
+          business_name?: string | null
+          business_type?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          message?: string | null
+          phone?: string | null
+          referral_source?: string | null
+          reviewed_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      app_users: {
+        Row: {
+          approved_at: string
+          business_name: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          is_active: boolean
+          role: string
+          user_id: string | null
+        }
+        Insert: {
+          approved_at?: string
+          business_name?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean
+          role?: string
+          user_id?: string | null
+        }
+        Update: {
+          approved_at?: string
+          business_name?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean
+          role?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       calls: {
         Row: {
           ai_summary: string | null
