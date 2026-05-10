@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      customers: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -32,6 +62,107 @@ export type Database = {
           email?: string | null
           id?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      project_photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          id: string
+          project_id: string
+          url: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          project_id: string
+          url: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          project_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_photos_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          company_name: string | null
+          contract_total: number
+          created_at: string
+          customer_address: string | null
+          customer_id: string | null
+          customer_name: string
+          deposit: number
+          deposit_paid: boolean
+          final_paid: boolean
+          id: string
+          notes: string | null
+          payment1_paid: boolean
+          payment2_paid: boolean
+          payment3_paid: boolean
+          progress_pct: number
+          project_title: string
+          punchlist_items: string[]
+          scope_of_work: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_name?: string | null
+          contract_total?: number
+          created_at?: string
+          customer_address?: string | null
+          customer_id?: string | null
+          customer_name: string
+          deposit?: number
+          deposit_paid?: boolean
+          final_paid?: boolean
+          id?: string
+          notes?: string | null
+          payment1_paid?: boolean
+          payment2_paid?: boolean
+          payment3_paid?: boolean
+          progress_pct?: number
+          project_title: string
+          punchlist_items?: string[]
+          scope_of_work?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string | null
+          contract_total?: number
+          created_at?: string
+          customer_address?: string | null
+          customer_id?: string | null
+          customer_name?: string
+          deposit?: number
+          deposit_paid?: boolean
+          final_paid?: boolean
+          id?: string
+          notes?: string | null
+          payment1_paid?: boolean
+          payment2_paid?: boolean
+          payment3_paid?: boolean
+          progress_pct?: number
+          project_title?: string
+          punchlist_items?: string[]
+          scope_of_work?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
