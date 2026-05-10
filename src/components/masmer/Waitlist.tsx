@@ -55,20 +55,18 @@ export function Waitlist() {
       return;
     }
     setSubmitting(true);
-    const { data: inserted, error: dbError } = await supabase
+    const { error: dbError } = await supabase
       .from("waitlist_signups")
-      .insert(parsed.data)
-      .select("email, phone")
-      .single();
+      .insert(parsed.data);
     setSubmitting(false);
     if (dbError) {
       setError("Something went wrong. Please try again.");
       toast.error("Submission failed. Please try again.");
       return;
     }
-    setSaved({ email: inserted?.email ?? parsed.data.email, phone: inserted?.phone ?? parsed.data.phone });
+    setSaved({ email: parsed.data.email, phone: parsed.data.phone });
     toast.success("You're on the waitlist!", {
-      description: `Saved ${inserted?.email ?? parsed.data.email}`,
+      description: `Saved ${parsed.data.email}`,
     });
     setDone(true);
   }
