@@ -5,12 +5,12 @@ export function Hero() {
   return (
     <section
       id="top"
-      className="relative overflow-hidden pt-32 pb-24 md:pt-40 md:pb-32"
+      className="relative overflow-hidden pt-32 pb-24 md:pt-40 md:pb-32 bg-background"
     >
       <div className="absolute inset-0 blueprint-grid opacity-60" />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/40 to-background" />
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-background/60 to-background" />
       <div
-        className="absolute -top-32 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full opacity-40 blur-3xl animate-pulse"
+        className="absolute top-24 left-1/2 -translate-x-1/2 h-[420px] w-[720px] rounded-full opacity-30 blur-3xl animate-pulse"
         style={{ background: "var(--gradient-orange)" }}
       />
       <div className="relative mx-auto max-w-5xl px-6 text-center">
