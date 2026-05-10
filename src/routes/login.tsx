@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/masmer/AuthContext";
 import { toast } from "sonner";
-import { Loader2, Eye, EyeOff, Lock } from "lucide-react";
+import { Loader2, Eye, EyeOff, Lock, Sparkles } from "lucide-react";
 import { Logo } from "@/components/masmer/Logo";
 
 export const Route = createFileRoute("/login")({
@@ -30,6 +30,29 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+
+  const DEMO_EMAIL = "demo@masmer.ai";
+  const DEMO_PASSWORD = "MasmerDemo2026!";
+
+  async function loginAsDemo() {
+    setDemoLoading(true);
+    try {
+      // Make sure the shared demo account exists / password is in sync
+      await supabase.functions.invoke("ensure-demo-user", { body: {} });
+      const { error } = await supabase.auth.signInWithPassword({
+        email: DEMO_EMAIL, password: DEMO_PASSWORD,
+      });
+      if (error) throw error;
+      await refresh();
+      toast.success("Welcome to the demo");
+      navigate({ to: "/dashboard" });
+    } catch (e) {
+      toast.error((e as Error).message || "Could not start demo");
+    } finally {
+      setDemoLoading(false);
+    }
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -101,9 +124,22 @@ function LoginPage() {
           )}
           {!teamMode && (
             <div className="mt-6">
+              <button
+                type="button"
+                onClick={loginAsDemo}
+                disabled={demoLoading}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-orange px-6 py-3 text-sm font-bold text-white hover:bg-orange/90 disabled:opacity-60 transition"
+              >
+                {demoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                Try the Demo (instant access)
+              </button>
+              <div className="mt-4 rounded-md border border-orange/30 bg-orange/5 px-3 py-2 text-[11px] text-muted-foreground text-center leading-relaxed">
+                Or sign in manually with:<br />
+                <span className="text-foreground font-mono">{DEMO_EMAIL}</span> / <span className="text-foreground font-mono">{DEMO_PASSWORD}</span>
+              </div>
               <Link to="/request-access"
-                className="block w-full text-center rounded-md bg-orange px-6 py-3 text-sm font-bold text-white hover:bg-orange/90 transition">
-                Request Access
+                className="mt-4 block w-full text-center rounded-md border border-border px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-orange/40 transition">
+                Request Full Access
               </Link>
             </div>
           )}
