@@ -194,7 +194,7 @@ function DashboardPage() {
     >
       {showOnboarding && (
         <OnboardingWizard
-          inviteeName={invite?.invitee_name ?? "there"}
+          inviteeName="there"
           onClose={() => setShowOnboarding(false)}
         />
       )}
