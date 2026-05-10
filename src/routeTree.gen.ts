@@ -10,13 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
-import { Route as SetupAdminRouteImport } from './routes/setup-admin'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as RequestAccessRouteImport } from './routes/request-access'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as EstimateRouteImport } from './routes/estimate'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CustomersRouteImport } from './routes/customers'
@@ -25,16 +26,15 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
 import { Route as PlannerRoutesRouteImport } from './routes/planner.routes'
 import { Route as CustomersIdRouteImport } from './routes/customers.$id'
-import { Route as DemoRouteImport } from './routes/demo.'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SetupAdminRoute = SetupAdminRouteImport.update({
-  id: '/setup-admin',
-  path: '/setup-admin',
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -42,9 +42,9 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RequestAccessRoute = RequestAccessRouteImport.update({
-  id: '/request-access',
-  path: '/request-access',
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsRoute = ProjectsRouteImport.update({
@@ -65,6 +65,11 @@ const PlannerRoute = PlannerRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EstimateRoute = EstimateRouteImport.update({
@@ -107,11 +112,6 @@ const CustomersIdRoute = CustomersIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => CustomersRoute,
 } as any)
-const DemoRoute = DemoRouteImport.update({
-  id: '/demo/',
-  path: '/demo/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -119,15 +119,15 @@ export interface FileRoutesByFullPath {
   '/customers': typeof CustomersRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/estimate': typeof EstimateRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRouteWithChildren
-  '/request-access': typeof RequestAccessRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
-  '/setup-admin': typeof SetupAdminRoute
+  '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
-  '/demo/': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
   '/planner/routes': typeof PlannerRoutesRoute
   '/projects/$id': typeof ProjectsIdRoute
@@ -138,15 +138,15 @@ export interface FileRoutesByTo {
   '/customers': typeof CustomersRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/estimate': typeof EstimateRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRouteWithChildren
-  '/request-access': typeof RequestAccessRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
-  '/setup-admin': typeof SetupAdminRoute
+  '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
-  '/demo': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
   '/planner/routes': typeof PlannerRoutesRoute
   '/projects/$id': typeof ProjectsIdRoute
@@ -158,15 +158,15 @@ export interface FileRoutesById {
   '/customers': typeof CustomersRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/estimate': typeof EstimateRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRouteWithChildren
-  '/request-access': typeof RequestAccessRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
-  '/setup-admin': typeof SetupAdminRoute
+  '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
-  '/demo/': typeof DemoRoute
   '/customers/$id': typeof CustomersIdRoute
   '/planner/routes': typeof PlannerRoutesRoute
   '/projects/$id': typeof ProjectsIdRoute
@@ -179,15 +179,15 @@ export interface FileRouteTypes {
     | '/customers'
     | '/dashboard'
     | '/estimate'
+    | '/forgot-password'
     | '/login'
     | '/planner'
     | '/privacy'
     | '/projects'
-    | '/request-access'
+    | '/reset-password'
     | '/settings'
-    | '/setup-admin'
+    | '/signup'
     | '/terms'
-    | '/demo/'
     | '/customers/$id'
     | '/planner/routes'
     | '/projects/$id'
@@ -198,15 +198,15 @@ export interface FileRouteTypes {
     | '/customers'
     | '/dashboard'
     | '/estimate'
+    | '/forgot-password'
     | '/login'
     | '/planner'
     | '/privacy'
     | '/projects'
-    | '/request-access'
+    | '/reset-password'
     | '/settings'
-    | '/setup-admin'
+    | '/signup'
     | '/terms'
-    | '/demo'
     | '/customers/$id'
     | '/planner/routes'
     | '/projects/$id'
@@ -217,15 +217,15 @@ export interface FileRouteTypes {
     | '/customers'
     | '/dashboard'
     | '/estimate'
+    | '/forgot-password'
     | '/login'
     | '/planner'
     | '/privacy'
     | '/projects'
-    | '/request-access'
+    | '/reset-password'
     | '/settings'
-    | '/setup-admin'
+    | '/signup'
     | '/terms'
-    | '/demo/'
     | '/customers/$id'
     | '/planner/routes'
     | '/projects/$id'
@@ -237,15 +237,15 @@ export interface RootRouteChildren {
   CustomersRoute: typeof CustomersRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   EstimateRoute: typeof EstimateRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   PlannerRoute: typeof PlannerRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ProjectsRoute: typeof ProjectsRouteWithChildren
-  RequestAccessRoute: typeof RequestAccessRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRoute
-  SetupAdminRoute: typeof SetupAdminRoute
+  SignupRoute: typeof SignupRoute
   TermsRoute: typeof TermsRoute
-  DemoRoute: typeof DemoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -257,11 +257,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/setup-admin': {
-      id: '/setup-admin'
-      path: '/setup-admin'
-      fullPath: '/setup-admin'
-      preLoaderRoute: typeof SetupAdminRouteImport
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -271,11 +271,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/request-access': {
-      id: '/request-access'
-      path: '/request-access'
-      fullPath: '/request-access'
-      preLoaderRoute: typeof RequestAccessRouteImport
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects': {
@@ -304,6 +304,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/estimate': {
@@ -362,13 +369,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CustomersIdRouteImport
       parentRoute: typeof CustomersRoute
     }
-    '/demo/': {
-      id: '/demo/'
-      path: '/demo'
-      fullPath: '/demo/'
-      preLoaderRoute: typeof DemoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -413,15 +413,15 @@ const rootRouteChildren: RootRouteChildren = {
   CustomersRoute: CustomersRouteWithChildren,
   DashboardRoute: DashboardRoute,
   EstimateRoute: EstimateRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   PlannerRoute: PlannerRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ProjectsRoute: ProjectsRouteWithChildren,
-  RequestAccessRoute: RequestAccessRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRoute,
-  SetupAdminRoute: SetupAdminRoute,
+  SignupRoute: SignupRoute,
   TermsRoute: TermsRoute,
-  DemoRoute: DemoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -2,15 +2,3 @@ project_id = "liilpbcivkogtxxyffqr"
 
 [functions.send-welcome-email]
 verify_jwt = false
-
-[functions.send-access-request-email]
-verify_jwt = false
-
-[functions.test-email]
-verify_jwt = false
-
-[functions.setup-admin]
-verify_jwt = false
-
-[functions.ensure-demo-user]
-verify_jwt = false

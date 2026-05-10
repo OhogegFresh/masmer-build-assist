@@ -3,20 +3,19 @@ import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/masmer/AuthContext";
 import { toast } from "sonner";
-import { Loader2, Eye, EyeOff, Lock, Sparkles } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { Logo } from "@/components/masmer/Logo";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Sign in — Masmer AI" },
-      { name: "description", content: "Sign in to your Masmer AI account." },
+      { name: "description", content: "Sign in to your free Masmer AI account." },
       { name: "robots", content: "noindex" },
     ],
   }),
   validateSearch: (s: Record<string, unknown>) => ({
     suspended: s.suspended === "1" ? "1" : undefined,
-    team: s.team === "true" ? "true" : undefined,
   }),
   component: LoginPage,
 });
@@ -25,49 +24,10 @@ function LoginPage() {
   const navigate = useNavigate();
   const { refresh } = useAuth();
   const search = Route.useSearch();
-  const teamMode = search.team === "true";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [demoLoading, setDemoLoading] = useState(false);
-
-  const DEMO_EMAIL = "demo@masmer.ai";
-  const DEMO_PASSWORD = "MasmerDemo2026!";
-
-  async function loginAsDemo() {
-    setDemoLoading(true);
-    try {
-      // Try signing in first — the shared demo user almost always already exists.
-      let { error } = await supabase.auth.signInWithPassword({
-        email: DEMO_EMAIL, password: DEMO_PASSWORD,
-      });
-
-      if (error) {
-        // Fallback: provision the demo user, then retry sign-in.
-        // Hard timeout so the button can never hang forever.
-        const timeout = new Promise((_, rej) =>
-          setTimeout(() => rej(new Error("Demo setup timed out, please try again")), 8000),
-        );
-        await Promise.race([
-          supabase.functions.invoke("ensure-demo-user", { body: {} }),
-          timeout,
-        ]);
-        const retry = await supabase.auth.signInWithPassword({
-          email: DEMO_EMAIL, password: DEMO_PASSWORD,
-        });
-        if (retry.error) throw retry.error;
-      }
-
-      await refresh();
-      toast.success("Welcome to the demo");
-      navigate({ to: "/dashboard" });
-    } catch (e) {
-      toast.error((e as Error).message || "Could not start demo");
-    } finally {
-      setDemoLoading(false);
-    }
-  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -75,29 +35,16 @@ function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setLoading(false);
-      return toast.error("Invalid credentials");
-    }
-    // Verify app_user
-    const { data: appUser } = await (supabase as any)
-      .from("app_users").select("*").eq("email", email).maybeSingle();
-    if (!appUser) {
-      await supabase.auth.signOut();
-      setLoading(false);
-      return toast.error("Account not provisioned. Please request access.");
-    }
-    if (!appUser.is_active) {
-      await supabase.auth.signOut();
-      setLoading(false);
-      return toast.error("Account suspended");
+      return toast.error("Invalid email or password");
     }
     await refresh();
-    toast.success("Signed in");
+    toast.success("Welcome back");
     navigate({ to: "/dashboard" });
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
-      <div className="w-full max-w-[420px]">
+      <div className="w-full max-w-[400px]">
         <div className="flex justify-center mb-8"><Logo /></div>
         <div className="rounded-2xl border border-border bg-card p-8">
           {search.suspended && (
@@ -105,14 +52,13 @@ function LoginPage() {
               Your account has been suspended. Contact us for help.
             </div>
           )}
-          <h1 className="font-display text-3xl font-bold tracking-tight text-center inline-flex items-center justify-center gap-2 w-full">
-            {teamMode && <Lock className="h-5 w-5 text-orange" />}
-            {teamMode ? "Team Login" : "Welcome back"}
+          <h1 className="font-display text-3xl font-bold tracking-tight text-center">
+            Welcome back
           </h1>
           <p className="mt-2 text-sm text-muted-foreground text-center">
-            {teamMode ? "Internal team access" : "Sign in to your Masmer AI account"}
+            Sign in to your Masmer AI account
           </p>
-          {teamMode && (
+
           <form onSubmit={onSubmit} className="mt-6 space-y-3">
             <input
               type="email" required placeholder="Email"
@@ -136,37 +82,28 @@ function LoginPage() {
               Sign In
             </button>
           </form>
-          )}
-          {!teamMode && (
-            <div className="mt-6">
-              <button
-                type="button"
-                onClick={loginAsDemo}
-                disabled={demoLoading}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-orange px-6 py-3 text-sm font-bold text-white hover:bg-orange/90 disabled:opacity-60 transition"
-              >
-                {demoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                Try the Demo (instant access)
-              </button>
-              <div className="mt-4 rounded-md border border-orange/30 bg-orange/5 px-3 py-2 text-[11px] text-muted-foreground text-center leading-relaxed">
-                Or sign in manually with:<br />
-                <span className="text-foreground font-mono">{DEMO_EMAIL}</span> / <span className="text-foreground font-mono">{DEMO_PASSWORD}</span>
-              </div>
-              <Link to="/request-access"
-                className="mt-4 block w-full text-center rounded-md border border-border px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-orange/40 transition">
-                Request Full Access
-              </Link>
-            </div>
-          )}
-          {teamMode && (
-            <p className="mt-4 text-center">
-              <Link to="/login" search={{ team: "true" } as any}
-                className="text-[11px] text-muted-foreground/60 hover:text-orange transition">
-                Team access →
-              </Link>
-            </p>
-          )}
-          <p className="mt-6 text-xs text-center text-muted-foreground">
+
+          <div className="mt-3 text-center">
+            <Link to="/forgot-password" className="text-xs text-muted-foreground hover:text-orange">
+              Forgot password?
+            </Link>
+          </div>
+
+          <div className="my-6 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs text-muted-foreground">or</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
+          <Link to="/signup"
+            className="block w-full text-center rounded-md border border-border px-6 py-3 text-sm font-medium text-foreground hover:border-orange/40 hover:text-orange transition">
+            Create free account →
+          </Link>
+
+          <p className="mt-6 text-[11px] text-center text-muted-foreground">
+            Free to use • No credit card required
+          </p>
+          <p className="mt-1 text-[11px] text-center text-muted-foreground">
             Questions? <a href="mailto:jacob@casacapsolutions.com" className="text-orange hover:underline">jacob@casacapsolutions.com</a>
           </p>
         </div>

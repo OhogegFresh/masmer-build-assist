@@ -24,16 +24,15 @@ export function Hero() {
           Behind Your Business
         </h1>
         <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-          Masmer AI answers your calls, books your estimates, follows up on
-          leads, schedules your jobs, and builds your estimates — 24/7. So you
-          can stay on the job site.
+          Free AI platform for contractors. Build estimates, manage projects,
+          and let AI answer your calls — all in one place. No credit card required.
         </p>
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
-            to="/estimate"
+            to="/signup"
             className="group inline-flex items-center gap-2 rounded-md bg-gradient-orange px-6 py-3.5 text-sm font-bold text-foreground shadow-orange hover:scale-[1.02] transition-transform"
           >
-            Try the Estimating Bot Free
+            Create Free Account
             <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
           </Link>
           <a
