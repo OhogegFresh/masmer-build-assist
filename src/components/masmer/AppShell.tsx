@@ -8,7 +8,6 @@ import {
   Menu,
   LogOut,
   Settings,
-  ShieldCheck,
   ChevronUp,
   CalendarDays,
 } from "lucide-react";
