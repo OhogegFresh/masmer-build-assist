@@ -6,6 +6,7 @@ import {
   Users,
   Calculator,
   Menu,
+  Phone,
   LogOut,
   Settings,
   ChevronUp,
@@ -19,6 +20,7 @@ const nav = [
   { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/customers", label: "Customers", icon: Users },
   { to: "/planner", label: "Day Planner", icon: CalendarDays },
+  { to: "/calls", label: "AI Call Leads", icon: Phone },
   { to: "/estimate", label: "Estimate Builder", icon: Calculator },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;

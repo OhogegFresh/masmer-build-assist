@@ -21,6 +21,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as EstimateRouteImport } from './routes/estimate'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CustomersRouteImport } from './routes/customers'
+import { Route as CallsRouteImport } from './routes/calls'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
@@ -87,6 +88,11 @@ const CustomersRoute = CustomersRouteImport.update({
   path: '/customers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CallsRoute = CallsRouteImport.update({
+  id: '/calls',
+  path: '/calls',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -116,6 +122,7 @@ const CustomersIdRoute = CustomersIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/calls': typeof CallsRoute
   '/customers': typeof CustomersRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/estimate': typeof EstimateRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/calls': typeof CallsRoute
   '/customers': typeof CustomersRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/estimate': typeof EstimateRoute
@@ -155,6 +163,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/calls': typeof CallsRoute
   '/customers': typeof CustomersRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/estimate': typeof EstimateRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/calls'
     | '/customers'
     | '/dashboard'
     | '/estimate'
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/calls'
     | '/customers'
     | '/dashboard'
     | '/estimate'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/calls'
     | '/customers'
     | '/dashboard'
     | '/estimate'
@@ -234,6 +246,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  CallsRoute: typeof CallsRoute
   CustomersRoute: typeof CustomersRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   EstimateRoute: typeof EstimateRoute
@@ -334,6 +347,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CustomersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calls': {
+      id: '/calls'
+      path: '/calls'
+      fullPath: '/calls'
+      preLoaderRoute: typeof CallsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -410,6 +430,7 @@ const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  CallsRoute: CallsRoute,
   CustomersRoute: CustomersRouteWithChildren,
   DashboardRoute: DashboardRoute,
   EstimateRoute: EstimateRoute,
