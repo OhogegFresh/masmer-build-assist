@@ -17,7 +17,7 @@ const steps = [
   },
   {
     icon: ListChecks,
-    title: "AI asks smart questions",
+    title: "Asks smart questions",
     text: "Room dimensions, materials, tile size, fixture grade.",
   },
   {
@@ -61,7 +61,7 @@ export function EstimatingBot() {
             </h2>
             <p className="mt-5 text-lg text-muted-foreground max-w-2xl mx-auto">
               Stop spending hours building estimates. Describe the project,
-              answer a few questions, and Masmer AI does the rest.
+              answer a few questions, and Masmer does the rest.
             </p>
           </div>
         </Reveal>
@@ -164,7 +164,7 @@ export function EstimatingBot() {
             to="/signup"
             className="group inline-flex items-center gap-2 rounded-md bg-gradient-orange px-7 py-4 text-sm font-bold text-foreground shadow-orange hover:scale-[1.02] transition-transform"
           >
-            Try the Estimating Bot Free
+            Try Eliko Free
             <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>

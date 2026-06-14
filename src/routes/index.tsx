@@ -16,13 +16,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Masmer AI answers calls, books estimates, follows up on leads, schedules jobs, and builds estimates 24/7 for contractors.",
+          "Masmer answers calls, books estimates, follows up on leads, schedules jobs, and builds estimates 24/7 for contractors.",
       },
       { property: "og:title", content: "Masmer AI — The AI Brain Behind Your Business" },
       {
         property: "og:description",
         content:
-          "AI agents built for contractors: receptionist, estimating bot, lead follow-up, scheduler.",
+          "Built for contractors: receptionist, Eliko, lead follow-up, scheduler.",
       },
     ],
   }),

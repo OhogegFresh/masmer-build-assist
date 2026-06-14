@@ -16,7 +16,7 @@ export function VapiCard() {
         Try Our AI Receptionist Live
       </h2>
       <p className="mt-3 text-muted-foreground max-w-2xl">
-        Call our AI receptionist right now and experience how Masmer AI answers calls,
+        Call our AI receptionist right now and experience how Masmer answers calls,
         qualifies leads, and books appointments — 24/7 automatically.
       </p>
       <a

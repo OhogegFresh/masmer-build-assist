@@ -19,7 +19,7 @@ const plans = [
     highlight: true,
     features: [
       "Everything in Essentials, plus:",
-      "AI Estimating Bot",
+      "Eliko",
       "Home Depot Materials Cart Builder",
       "Professional Estimate Generator (PDF)",
       "Payment Schedule Builder",

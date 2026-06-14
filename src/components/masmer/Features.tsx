@@ -24,7 +24,7 @@ const features = [
   },
   {
     icon: FileText,
-    title: "AI Estimating Bot",
+    title: "Eliko",
     text: "Describe your project and get a full estimate with materials, Home Depot cart, payment schedule, and contract — in minutes.",
   },
 ];

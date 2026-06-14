@@ -53,10 +53,10 @@ export function OnboardingWizard({
           {step === 1 && (
             <div>
               <h2 className="font-display text-3xl font-bold">
-                Welcome to Masmer AI 👋
+                Welcome to Masmer 👋
               </h2>
               <p className="mt-2 text-muted-foreground">
-                Hi {inviteeName}! Masmer AI is your complete AI command center for running a contracting business.
+                Hi {inviteeName}! Masmer is your complete AI command center for running a contracting business.
                 Let's take a quick tour so you know what's possible.
               </p>
               <p className="mt-6 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -127,14 +127,14 @@ export function OnboardingWizard({
             <div>
               <h2 className="font-display text-3xl font-bold">Build your first Scope of Work 🔧</h2>
               <p className="mt-2 text-muted-foreground">
-                Click below to try the AI estimating tool — it builds full scopes, material lists, and punchlists in minutes.
+                Click below to try Eliko — it builds full scopes, material lists, and punchlists in minutes.
               </p>
               <div className="mt-6 flex flex-col gap-3">
                 <button
                   onClick={() => { close(); navigate({ to: "/estimate" }); }}
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-orange px-6 py-4 text-lg font-bold text-white shadow-orange hover:scale-[1.01] transition-transform"
                 >
-                  Try the Estimating Bot <ArrowRight className="h-5 w-5" />
+                  Try Eliko <ArrowRight className="h-5 w-5" />
                 </button>
                 <button
                   onClick={close}

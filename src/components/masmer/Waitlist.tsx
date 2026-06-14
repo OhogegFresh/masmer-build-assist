@@ -56,7 +56,7 @@ export function Waitlist() {
 
       if (data.session) {
         await refresh();
-        toast.success("Welcome to Masmer AI!");
+        toast.success("Welcome to Masmer!");
         navigate({ to: "/dashboard" });
       } else {
         toast.success("Check your email to confirm your account");
@@ -77,7 +77,7 @@ export function Waitlist() {
         <Reveal>
           <div className="text-center mb-10">
             <h2 className="font-display text-4xl md:text-5xl font-bold tracking-tighter">
-              Start using Masmer AI <span className="text-gradient-orange">Free</span>
+              Start using Masmer <span className="text-gradient-orange">Free</span>
             </h2>
             <p className="mt-4 text-muted-foreground">
               Instant access. No credit card required.
